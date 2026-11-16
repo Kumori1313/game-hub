@@ -1,0 +1,37 @@
+{
+  "name": "game-hub",
+  "version": "1.0.0",
+  "description": "Game Hub: a multiplayer game platform project.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:backend": "node --env-file=.env.local scripts/check-backend.mjs",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kumori1313/game-hub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kumori1313/game-hub/issues"
+  },
+  "homepage": "https://github.com/Kumori1313/game-hub#readme",
+  "devDependencies": {
+    "vite": "8.3.8",
+    "supabase": "3.1.0"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.0"
+  }
+}

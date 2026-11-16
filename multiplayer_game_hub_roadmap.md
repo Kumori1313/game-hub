@@ -24,16 +24,16 @@ Build a GitHub Pages hub where guests enter a display name, browse or host multi
 
 ## Phase 2 — Set up the projects
 
-See the [setup guide](docs/phase-2-setup.md). Both repositories have Vite scaffolds and successful Pages deployments. Published HTML, JavaScript, and CSS return HTTP 200 at both project paths. Hosted Supabase creation awaits organization selection. Local Supabase is running; both repositories passed anonymous sign-in, verified-identity, and empty Data API checks.
+See the [setup guide](docs/phase-2-setup.md). Both repositories have Vite scaffolds and successful Pages deployments. Published HTML, JavaScript, and CSS return HTTP 200 at both project paths. Hosted Supabase project `game-hub` (`ivjznofekldhkocheija`, US East) is healthy, anonymous Auth is enabled, and both repositories have matching public build variables. Local Supabase is running; both repositories passed anonymous sign-in, verified-identity, and empty Data API checks.
 
 - [x] Create repositories for the hub and the first game. Add a README, local setup instructions, and a Git ignore file to each.
-- [ ] Create a Supabase project, enable anonymous sign-ins, and configure both sites with its project URL and publishable key. Version the Postgres schema using SQL migrations.
+- [x] Create a Supabase project, enable anonymous sign-ins, and configure both sites with its project URL and publishable key. Version the Postgres schema using SQL migrations when application tables are introduced.
 - [x] Set up local Supabase using its CLI and a Docker-compatible runtime for development and authorization testing. Use a separate production project when ready to release.
 - [x] Configure GitHub Pages for each repository and confirm each site loads at its project URL.
 - [x] Configure the build tool's base path and links for each repository's subdirectory; verify assets load on the published site.
 - [x] Keep secret/service-role keys, database passwords, and management tokens out of repositories and browser code. The project URL and publishable key are client-visible; enforce access with grants and Row Level Security (RLS).
 
-**Milestone:** Both sites display a basic page, and the local app can connect to local Supabase services.
+**Milestone:** Complete. Both Pages sites are deployed, local backend checks pass in both repositories, and hosted anonymous Auth and Data API connectivity are verified. No application tables exist yet; schema migrations and RLS policies arrive with lobby implementation.
 
 ## Phase 3 — Guest entry and hub
 

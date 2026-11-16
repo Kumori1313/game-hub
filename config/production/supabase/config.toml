@@ -1,0 +1,9 @@
+project_id = "game-hub"
+
+[auth]
+site_url = "https://kumori1313.github.io/game-hub/"
+additional_redirect_urls = ["https://kumori1313.github.io/tic-tac-toe/"]
+enable_anonymous_sign_ins = true
+
+[api]
+auto_expose_new_tables = false

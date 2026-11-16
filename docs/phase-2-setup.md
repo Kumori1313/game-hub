@@ -24,7 +24,7 @@ Start the hub with `npm run dev` on port 5173 and the game on port 5174. Both us
 
 ## Hosted Supabase
 
-Create one project for both sites after choosing the owning organization. Select a region near the initial players. Enable anonymous sign-ins in Authentication settings; configure the hub URL and game URL in Auth URL settings. Keep default database access restricted. Use a publishable key for browser code.
+The shared hosted project is **game-hub**, owned by **Kumori1313’s Org**, in **us-east-1** (quoted at $0/month when created). Its reference is `ivjznofekldhkocheija`, its API URL is `https://ivjznofekldhkocheija.supabase.co`, and its [dashboard](https://supabase.com/dashboard/project/ivjznofekldhkocheija) manages Auth and Postgres. Anonymous sign-ins are enabled and the two Pages URLs are configured. Both GitHub repositories have their hosted URL and publishable key set as Actions variables. Local `.env.local` files continue to target the local backend.
 
 Set these GitHub Actions repository variables in **both** repositories:
 
@@ -53,6 +53,19 @@ For rollback, revert the problematic source commit and push the revert, which re
 - **Missing browser backend:** check the two environment variables, then restart Vite or rebuild Pages.
 - **Anonymous sign-in disabled:** enable it in the correct local configuration or hosted project. Restart the local stack after configuration changes.
 - **404 or missing assets:** verify Pages uses Actions and Vite's base matches the repository path.
+
+## Verified setup
+
+Both repositories pass local anonymous sign-in, verified-identity, and empty Data API checks. Hosted anonymous sign-in and an authenticated PostgREST request also passed. Hosted OpenAPI discovery requires a secret key; use ordinary API requests for browser-safe connectivity checks. The hosted `public` schema has no tables, and the security advisor returned no findings. One-time hosted smoke tests created signed-out anonymous users.
+
+The reviewed production configuration is tracked separately at `config/production/supabase/config.toml` to avoid pushing development defaults to production. Inspect changes before applying:
+
+```bash
+npx supabase config diff --workdir config/production --remote=ivjznofekldhkocheija
+npx supabase config push --workdir config/production --remote=ivjznofekldhkocheija
+```
+
+Future application tables need versioned SQL migrations with explicit grants and RLS policies. Phase 2 introduces no application schema or privileged database functions.
 
 ## Scope
 

@@ -48,7 +48,8 @@ These are layout sketches, not a final visual design. Bracketed labels represent
 ```text
 HUB / ENTRY
 Game Hub
-Display name: [____________]+[Continue]
+Display name: [____________]
+[Continue]
 After entry: Playing as Alex [Change name]
 Tic-Tac-Toe · 2 players [Browse lobbies]
 

@@ -37,13 +37,13 @@ See the [setup guide](docs/phase-2-setup.md). Both repositories have Vite scaffo
 
 ## Phase 3 — Guest entry and hub
 
-- [ ] Build the hub's welcome screen, display-name entry, and game selection cards.
-- [ ] Sign in anonymously and store the display name with the guest ID. Validate its length and allowed characters, and display names as text rather than HTML.
-- [ ] Use the same Supabase project and compatible session storage configuration across hub and game sites. Test that the guest session survives navigation between project paths on the same `USERNAME.github.io` origin; handle a missing session by asking the player to enter a name again.
-- [ ] Explain that names are not reserved and guest identity may be lost when browser data is cleared or a different device is used.
-- [ ] Show loading, connection, and error states, plus a way to change the display name.
+- [x] Build the hub's welcome screen, display-name entry, and game selection cards.
+- [x] Sign in anonymously and store the display name with the guest ID. Validate its length and allowed characters, and display names as text rather than HTML.
+- [x] Use the same Supabase project and compatible session storage configuration across hub and game sites. Test that the guest session survives navigation between project paths on the same `USERNAME.github.io` origin; handle a missing session by asking the player to enter a name again.
+- [x] Explain that names are not reserved and guest identity may be lost when browser data is cleared or a different device is used.
+- [x] Show loading, connection, and error states, plus a way to change the display name.
 
-**Milestone:** A guest can enter a name, select the first game, and arrive at its site with their guest session available.
+**Milestone:** Complete. Guests can enter or change a name, select tic-tac-toe, and carry their identity between both published sites. Four browser scenarios pass locally and on GitHub Pages. See the [guest-session contract and verification notes](docs/phase-3-guests.md).
 
 ## Phase 4 — Lobbies and presence
 

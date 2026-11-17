@@ -2,7 +2,7 @@
 
 ## Placement and goal
 
-Phase 3.5 substantially redesigns the hub and tic-tac-toe entry experience before Phase 4 adds lobbies. Preserve existing roadmap numbering and the verified guest-session behavior. This document defines the direction; it does not change the published interface.
+Phase 3.5 substantially redesigns the hub and tic-tac-toe entry experience before Phase 4 adds lobbies. Preserve existing roadmap numbering and the verified guest-session behavior. The redesign is implemented on both published sites. See the [component guide](ui-components.md) for the final system and future screen sketches.
 
 ## Reference observations
 
@@ -51,18 +51,18 @@ Sketch how the visual language extends to public lobby lists, waiting rooms, and
 
 ## Acceptance criteria
 
-- [ ] Desktop and mobile previews show original, related artwork in navigation and mission banner.
-- [ ] Layout, typography, and side visuals form one coherent design in both light and dark modes.
-- [ ] First visits default to dark mode; the labeled toggle works with keyboard and assistive technology.
-- [ ] Explicit theme choices persist across reloads and hub/game navigation without a wrong-theme flash.
-- [ ] Invalid or unavailable storage falls back to dark mode; switching themes preserves guest identity and unsaved input.
-- [ ] Guest entry and game selection remain the primary actions; unfinished features are clearly identified.
-- [ ] Side visuals respond to scrolling or guest progress without implying fabricated live data.
-- [ ] At 320px, content and controls fit without horizontal scrolling or visual overlap.
-- [ ] Keyboard navigation, visible focus, status/error announcements, and readable contrast are preserved.
-- [ ] Reduced-motion behavior and any required pause control work without hiding essential information.
-- [ ] Existing unit tests and guest-session browser tests pass locally and on both published sites.
-- [ ] Visual checks cover entry, returning guest, name editing, offline/error states, desktop, mobile, and both themes.
+- [x] Desktop and mobile previews show original, related artwork in navigation and mission banner.
+- [x] Layout, typography, and side visuals form one coherent design in both light and dark modes.
+- [x] First visits default to dark mode; the labeled toggle works with keyboard and assistive technology.
+- [x] Explicit theme choices persist across reloads and hub/game navigation without a wrong-theme flash.
+- [x] Invalid or unavailable storage falls back to dark mode; switching themes preserves guest identity and unsaved input.
+- [x] Guest entry and game selection remain the primary actions; unfinished features are clearly identified.
+- [x] Side visuals respond to scrolling or guest progress without implying fabricated live data.
+- [x] At 320px, content and controls fit without horizontal scrolling or visual overlap.
+- [x] Keyboard navigation, visible focus, status/error announcements, and readable contrast are preserved.
+- [x] Reduced-motion behavior and any required pause control work without hiding essential information.
+- [x] Existing unit tests and guest-session browser tests pass locally and on both published sites.
+- [x] Visual checks cover entry, returning guest, name editing, offline/error states, desktop, mobile, and both themes.
 
 ## Implementation order
 
@@ -70,3 +70,9 @@ Sketch how the visual language extends to public lobby lists, waiting rooms, and
 2. Review the composition at desktop and phone widths, including both themes and reduced motion.
 3. Apply the chosen treatment to both entry flows and sketch the future lobby/match layouts.
 4. Verify accessibility, guest behavior, and asset paths before deployment.
+
+## Completion record
+
+Both repositories pass their unit checks and production builds. All nine browser scenarios pass against local builds and the published GitHub Pages sites, covering guest identity, names, failure recovery, dark defaults, shared theme preferences, storage fallback, keyboard controls, reduced motion, artwork paths, and 320px layouts. Text/action/error color pairs meet the checked 4.5:1 contrast threshold; input boundaries meet 3:1. Desktop/mobile screenshots in both themes were reviewed.
+
+The illustration advances only through scrolling or confirmed guest progress; no autonomous animation requires a pause control. Future lobby and match layouts are sketched in the component guide; their behavior remains in later roadmap phases.

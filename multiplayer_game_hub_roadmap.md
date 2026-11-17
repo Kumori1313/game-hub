@@ -49,16 +49,16 @@ See the [setup guide](docs/phase-2-setup.md). Both repositories have Vite scaffo
 
 This phase follows guest entry and precedes lobby implementation. Existing phase numbers remain unchanged. See the [UI redesign brief](docs/ui-redesign.md) for reference analysis, layout direction, and acceptance criteria.
 
-- [ ] Design an original Game Hub visual identity, including a mark and coordinated artwork for the top navigation and mission banner, inspired by the supplied CentOS reference.
-- [ ] Establish a spacious layout with clear typography, restrained accents, and a desktop side panel inspired by AI 2027.
-- [ ] Add light and dark modes with dark as the first-visit default, an accessible navigation toggle, and a persisted theme choice shared across both sites. Verify both themes without resetting guest sessions or form input.
-- [ ] Prototype a side visual that responds to scrolling and guest-entry progress using an illustrative tic-tac-toe sequence; distinguish illustrations from live game data.
-- [ ] Apply the design to the hub and tic-tac-toe entry pages while preserving guest identity, name editing, connection feedback, and navigation.
-- [ ] Define reusable styles and layouts for upcoming lobby lists, waiting rooms, and match screens.
-- [ ] Provide narrow-screen layouts and reduced-motion alternatives; verify keyboard use, contrast, focus visibility, and animation controls.
-- [ ] Review desktop and mobile previews, rerun guest-session browser tests, and verify the redesign on both published project URLs.
+- [x] Design an original Game Hub visual identity, including a mark and coordinated artwork for the top navigation and mission banner, inspired by the supplied CentOS reference.
+- [x] Establish a spacious layout with clear typography, restrained accents, and a desktop side panel inspired by AI 2027.
+- [x] Add light and dark modes with dark as the first-visit default, an accessible navigation toggle, and a persisted theme choice shared across both sites. Verify both themes without resetting guest sessions or form input.
+- [x] Prototype a side visual that responds to scrolling and guest-entry progress using an illustrative tic-tac-toe sequence; distinguish illustrations from live game data.
+- [x] Apply the design to the hub and tic-tac-toe entry pages while preserving guest identity, name editing, connection feedback, and navigation.
+- [x] Define reusable styles and layouts for upcoming lobby lists, waiting rooms, and match screens.
+- [x] Provide narrow-screen layouts and reduced-motion alternatives; verify keyboard use, contrast, focus visibility, and animation controls.
+- [x] Review desktop and mobile previews, rerun guest-session browser tests, and verify the redesign on both published project URLs.
 
-**Milestone:** Both sites share a distinctive visual identity with artwork in the navigation and mission banner, useful dynamic side visuals, and verified guest-flow accessibility. Design references are reviewed; implementation has not started.
+**Milestone:** Complete. Both published sites share original navigation/banner artwork, dark-by-default themes with a remembered toggle, and a scroll-responsive side illustration. Unit checks and builds pass in both repositories; all nine browser scenarios pass locally and on GitHub Pages. See the [component guide](docs/ui-components.md) for the shared styling and future screen sketches.
 
 ## Phase 4 — Lobbies and presence
 

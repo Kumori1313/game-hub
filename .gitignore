@@ -8,3 +8,6 @@ dist/
 .DS_Store
 test-results/
 playwright-report/
+
+# Local design references and saved third-party pages
+/UI-Ideas/

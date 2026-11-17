@@ -6,7 +6,7 @@ const roots = {
   'game-hub': resolve('dist'),
   'tic-tac-toe': resolve(process.env.GAME_SITE_DIR ?? '../tic-tac-toe', 'dist'),
 };
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 createServer(async (request, response) => {
   try {
     const [slug, ...parts] = new URL(request.url, 'http://127.0.0.1').pathname.slice(1).split('/');

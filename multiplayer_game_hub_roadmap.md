@@ -45,6 +45,21 @@ See the [setup guide](docs/phase-2-setup.md). Both repositories have Vite scaffo
 
 **Milestone:** Complete. Guests can enter or change a name, select tic-tac-toe, and carry their identity between both published sites. Four browser scenarios pass locally and on GitHub Pages. See the [guest-session contract and verification notes](docs/phase-3-guests.md).
 
+## Phase 3.5 — Redesign the visual experience
+
+This phase follows guest entry and precedes lobby implementation. Existing phase numbers remain unchanged. See the [UI redesign brief](docs/ui-redesign.md) for reference analysis, layout direction, and acceptance criteria.
+
+- [ ] Design an original Game Hub visual identity, including a mark and coordinated artwork for the top navigation and mission banner, inspired by the supplied CentOS reference.
+- [ ] Establish a spacious layout with clear typography, restrained accents, and a desktop side panel inspired by AI 2027.
+- [ ] Add light and dark modes with dark as the first-visit default, an accessible navigation toggle, and a persisted theme choice shared across both sites. Verify both themes without resetting guest sessions or form input.
+- [ ] Prototype a side visual that responds to scrolling and guest-entry progress using an illustrative tic-tac-toe sequence; distinguish illustrations from live game data.
+- [ ] Apply the design to the hub and tic-tac-toe entry pages while preserving guest identity, name editing, connection feedback, and navigation.
+- [ ] Define reusable styles and layouts for upcoming lobby lists, waiting rooms, and match screens.
+- [ ] Provide narrow-screen layouts and reduced-motion alternatives; verify keyboard use, contrast, focus visibility, and animation controls.
+- [ ] Review desktop and mobile previews, rerun guest-session browser tests, and verify the redesign on both published project URLs.
+
+**Milestone:** Both sites share a distinctive visual identity with artwork in the navigation and mission banner, useful dynamic side visuals, and verified guest-flow accessibility. Design references are reviewed; implementation has not started.
+
 ## Phase 4 — Lobbies and presence
 
 - [ ] Design a shared Postgres schema: game catalog, public lobby summaries, lobby membership, and match state. Use Auth user UUIDs for identity and generated UUIDs for lobbies and matches, not display names.

@@ -57,3 +57,11 @@ GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:e2e
 The test server hosts both builds under one origin to exercise production-style session handoff. The suite covers name validation, safe text rendering, identity continuity, duplicate display names, connection failures, offline recovery, missing sessions, keyboard input, and a 320px viewport. Screenshots are written to `/tmp/game-hub-phase3.png` and `/tmp/tic-tac-toe-phase3.png`.
 
 To verify deployed sites, use `E2E_BASE_URL=https://kumori1313.github.io npm run test:e2e`. Browser tests create anonymous test users in the target backend; use local Supabase for routine work. Both builds must use the local project URL for local verification.
+
+## Visual design and themes
+
+The shared visual language uses original SVG artwork (`public/art/playfield.svg`), a plum mission banner, editorial typography, and a desktop side illustration. Semantic color tokens in `src/style.css` support both themes. Dark is the first-visit default, even when the operating system prefers light. The navigation toggle saves `dark` or `light` under the origin-wide `game-hub-theme` key, which is independent of guest identity.
+
+A small inline head script selects the saved theme before paint. If storage is unavailable, dark remains the default and the toggle still works for the current page. `src/theme.js` also synchronizes other tabs. `src/illustration.js` updates the preview only in response to scroll or guest progress and while visible; reduced-motion mode displays a static final board. There is no autonomous animation loop or playable board in this phase.
+
+The hub’s [component guide](https://github.com/Kumori1313/game-hub/blob/main/docs/ui-components.md) documents matching styles, future screen sketches, and verification. Keep shared presentation files aligned across repositories until they are extracted into a package.

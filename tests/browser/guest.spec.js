@@ -82,7 +82,7 @@ test('keyboard entry works at 320px and exposes the ready state accessibly', asy
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/game-hub/');
   await expect(page.locator('#guest-form')).toBeVisible();
-  await page.keyboard.press('Tab');
+  for (let index = 0; index < 8 && !(await page.locator('#display-name').evaluate(el => el === document.activeElement)); index++) await page.keyboard.press('Tab');
   await expect(page.getByLabel('Display name', { exact: true })).toBeFocused();
   await page.keyboard.type('Keyboard guest');
   await page.keyboard.press('Enter');

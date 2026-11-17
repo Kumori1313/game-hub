@@ -42,6 +42,7 @@ try {
   let room = await call(host,'create');
   await denied(host,'start',room);
   await denied(outsider,'snapshot',room);
+  await denied(outsider,null,room);
   const memberChannel = host.client.channel(`lobby:${room}`, { config: { private: true, presence: { enabled: true } } });
   const memberStatus = await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Member Presence connection timed out.')), 10000);

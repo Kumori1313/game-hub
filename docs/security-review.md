@@ -51,3 +51,7 @@ References: [anonymous sign-ins](https://supabase.com/docs/guides/auth/auth-anon
 ## Advisor findings
 
 Hosted warnings remain for intentional guest-readable catalog/summary/member Presence policies and extension-owned cron policies. The authenticated role lacks usage on the unexposed cron schema. Leaked-password protection is disabled; no permanent users existed at review and email signup is disabled. The local Docker image also reports an older Vault extension; this application does not use Vault. Review image/extension upgrades separately before using it. These notices are not a clean security certification.
+
+## Completion record
+
+Both repositories pass unit checks and production builds. The local lobby and security integration suites pass, including all eight winning lines, draws, ninth-move wins, duplicate/concurrent requests, revoked sessions, and denied private operations. All 13 browser scenarios pass locally and on the published GitHub Pages sites. Both Pages deployments succeeded. Hosted function definitions and grants match the reviewed boundaries, every application table has RLS, and production has zero outstanding declared configuration changes. Existing advisor notices and deferred controls are listed above. No paid resources were added.

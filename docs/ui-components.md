@@ -2,7 +2,7 @@
 
 ## Identity and layout
 
-Game Hub uses an original board-and-path emblem and `public/art/playfield.svg`, an original SVG illustration created for this project. Both repositories own matching copies. The same artwork is cropped in the navigation strip and enlarged beside the mission statement. No reference-site artwork, logos, fonts, or scripts are shipped. `UI-Ideas/` remains a local, ignored research folder.
+Game Hub uses an original board-and-path emblem and `public/art/playfield.svg`, an original SVG illustration created for this project. Both repositories own matching copies. The same artwork is cropped in the navigation strip and enlarged beside a short page title. No reference-site artwork, logos, fonts, or scripts are shipped. `UI-Ideas/` remains a local, ignored research folder.
 
 The content layout pairs guest entry and game selection with a sticky desktop illustration. Below 760px it becomes a single column, with the illustration after the primary content. System sans-serif type supports controls, Georgia supplies editorial headings, and system monospace supplies compact annotations. No font downloads or animation packages are required.
 
@@ -35,7 +35,7 @@ Theme changes update the document without rebuilding the guest UI. They must pre
 
 ## Illustration and accessibility
 
-The side board is labeled as an illustration rather than a playable match. Its five-move X win advances with page scrolling; confirmed guest readiness establishes a minimum preview step. Journey labels distinguish a ready guest from an actual game selection. No live player counts, scores, or lobby statistics are invented.
+The side board is labeled as an illustration rather than a playable match. Its five-move X win advances with page scrolling; confirmed guest readiness establishes a minimum preview step. The preview has no move counter, progress checklist, or explanatory captions. No live player counts, scores, or lobby statistics are invented.
 
 An IntersectionObserver gates work to visible panels. Scroll/resize events schedule at most one pending animation frame, and hidden documents do not draw. No timer advances the preview automatically. Reduced-motion mode shows the final board without transitions and does not change the diagram as the user scrolls. Its static description remains available to assistive technology.
 
@@ -77,3 +77,7 @@ Use `.section-heading` and `.section-number` for grouping, `.game-card` for boun
 The browser suite covers both existing guest behavior and redesign behavior: dark default under a light OS preference, cross-site persistence, keyboard toggling, preserved input and identity, invalid/unavailable storage, reduced motion, scrolling, responsive layouts, artwork URLs, and text/action/error token contrast. Run using the hub README’s local or hosted commands.
 
 Full-page screenshots cover both sites in light/dark at 1440px and 320px. Guest tests also exercise returning guests, editing, failed requests, offline recovery, and cleared sessions. Inspect representative screenshots after changes; contrast-token checks do not replace visual review of artwork, overlays, or controls.
+
+## Interface copy
+
+Keep the interface focused on entering a name, selecting a game, and playing. Use short, literal titles and action labels. Do not add slogans, promotional paragraphs, numbered onboarding summaries, or captions that explain an obvious control or illustration. Keep name constraints, actionable errors, and unavailable-feature notices where needed. Place secondary information, such as guest-identity persistence, in a collapsed disclosure. Banners retain their artwork but use compact page titles so they do not push controls below the first screen.

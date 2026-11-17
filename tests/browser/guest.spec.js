@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 async function enter(page, name) {
-  await expect(page.locator('#guest-status')).toContainText('No account');
+  await expect(page.locator('#guest-form')).toBeVisible();
   await page.getByLabel('Display name', { exact: true }).fill(name);
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.locator('#identity')).toContainText(name.trim());
@@ -18,7 +18,7 @@ test('guest identity and safe display name survive game navigation, refresh, and
   await expect(page.locator('#identity img')).toHaveCount(0);
   const id = await guestId(page);
   expect(id).toBeTruthy();
-  await page.getByRole('link', { name: 'Choose Tic-Tac-Toe' }).click();
+  await page.getByRole('link', { name: 'Open game' }).click();
   await expect(page).toHaveURL(/\/tic-tac-toe\/$/);
   await expect(page.locator('#selection')).toBeVisible();
   expect(await guestId(page)).toBe(id);
@@ -37,7 +37,7 @@ test('guest identity and safe display name survive game navigation, refresh, and
 
 test('validation, network failure, retry, offline recovery, and cleared identity', async ({ page, context }) => {
   await page.goto('/game-hub/');
-  await expect(page.locator('#guest-status')).toContainText('No account');
+  await expect(page.locator('#guest-form')).toBeVisible();
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.locator('#guest-error')).toHaveText('Enter a display name.');
   await page.getByLabel('Display name', { exact: true }).fill('a'.repeat(25));
@@ -62,7 +62,7 @@ test('validation, network failure, retry, offline recovery, and cleared identity
   await page.goto('/tic-tac-toe/');
   await expect(page.locator('#guest-form')).toBeVisible();
   await expect(page.locator('#selection')).toBeHidden();
-  await expect(page.locator('#guest-status')).toContainText('Enter a name');
+  await expect(page.locator('#entry-title')).toHaveText('Enter your name');
 });
 
 test('independent browsers can share a name without sharing an identity', async ({ browser, baseURL }) => {
@@ -86,7 +86,7 @@ test('keyboard entry works at 320px and exposes the ready state accessibly', asy
   await expect(page.getByLabel('Display name', { exact: true })).toBeFocused();
   await page.keyboard.type('Keyboard guest');
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('link', { name: 'Choose Tic-Tac-Toe' })).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Open game' })).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: '/tmp/game-hub-phase3.png', fullPage: true });
   await page.keyboard.press('Enter');

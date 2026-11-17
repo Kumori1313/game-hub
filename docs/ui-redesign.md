@@ -29,7 +29,7 @@ Apply the stored theme before the page first paints to avoid a flash of the wron
 
 Use the original emblem and a restrained crop of the banner art in the top navigation. Include links only to implemented destinations, such as the hub and game selection. Keep the current guest identity/change-name action easy to reach after entry.
 
-Make the opening banner a substantial visual element. Pair original art with a short mission statement about easy multiplayer games with friends. Draft copy: “Small games. Shared moments.” Supporting copy can explain that guests pick a name and play together without an account. Preserve honest availability messaging while lobbies and matches are still being built.
+Make the opening banner a substantial visual element. Pair original art with a short page title, such as “Game Hub” or “Tic-Tac-Toe”. Keep the banner compact so entry controls remain near the top; omit slogans and promotional descriptions. Preserve honest availability messaging while lobbies and matches are still being built.
 
 The art must remain recognizable and the text readable at desktop and phone widths. Do not place detailed imagery directly beneath form fields or critical status messages.
 
@@ -76,3 +76,7 @@ Sketch how the visual language extends to public lobby lists, waiting rooms, and
 Both repositories pass their unit checks and production builds. All nine browser scenarios pass against local builds and the published GitHub Pages sites, covering guest identity, names, failure recovery, dark defaults, shared theme preferences, storage fallback, keyboard controls, reduced motion, artwork paths, and 320px layouts. Text/action/error color pairs meet the checked 4.5:1 contrast threshold; input boundaries meet 3:1. Desktop/mobile screenshots in both themes were reviewed.
 
 The illustration advances only through scrolling or confirmed guest progress; no autonomous animation requires a pause control. Future lobby and match layouts are sketched in the component guide; their behavior remains in later roadmap phases.
+
+## Copy refinement
+
+Following user review, both sites omit promotional sections, banner slogans, redundant metadata, and the side preview’s move counter and progress checklist. Compact banners retain the artwork. Secondary guest-identity information is collapsed, while validation, errors, and development availability remain visible when relevant. See the component guide’s interface-copy rules for future screens.

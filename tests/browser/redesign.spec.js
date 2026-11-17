@@ -38,7 +38,7 @@ test('theme controls work with the keyboard and preserve unsaved names and guest
   await expect(page.getByLabel('Display name', { exact: true })).toHaveValue('Unsaved edit');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('game-hub-auth')).user.id)).toBe(id);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await page.getByRole('link', { name: 'Choose Tic-Tac-Toe' }).click();
+  await page.getByRole('link', { name: 'Open game' }).click();
   await expect(page.locator('#selection')).toBeVisible();
   await expect(theme(page)).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('game-hub-auth')).user.id)).toBe(id);
@@ -58,15 +58,15 @@ test('storage failure keeps dark fallback and a working page-local toggle', asyn
 });
 
 test('side illustration changes with scroll and is static with reduced motion', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1440, height: 600 });
   await page.goto('/game-hub/');
-  await page.locator('#side-visual').scrollIntoViewIfNeeded();
+  await expect(page.locator('#side-visual')).toBeVisible();
   const before = await page.locator('#side-visual').getAttribute('data-step');
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
   await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');
   expect(before).not.toBe('5');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(page.locator('#move-label')).toHaveText('A familiar finish');
+  await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');
   await page.evaluate(() => scrollTo(0, 200));
   await page.locator('#side-visual').scrollIntoViewIfNeeded();
   await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');

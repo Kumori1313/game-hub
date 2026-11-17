@@ -93,9 +93,10 @@ test('both themes have readable tokens, correct art paths, and responsive entry/
             return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
           };
           const ratio = (a, b) => { const x = luminance(style.getPropertyValue(a)); const y = luminance(style.getPropertyValue(b)); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
-          return [ratio('--text', '--page'), ratio('--muted', '--page'), ratio('--accent-ink', '--accent'), ratio('--error', '--page')];
+          return [ratio('--text', '--page'), ratio('--muted', '--page'), ratio('--accent-ink', '--accent'), ratio('--error', '--page'), ratio('--control-line', '--field')];
         });
-        for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+        for (const ratio of ratios.slice(0, 4)) expect(ratio).toBeGreaterThanOrEqual(4.5);
+        expect(ratios[4]).toBeGreaterThanOrEqual(3);
         await page.screenshot({ path: `/tmp/${slug}-${mode}-${width}.png`, fullPage: true });
         await page.getByRole('button', { name: 'Continue', exact: true }).click();
         await expect(page.locator('#guest-error')).toContainText('Enter a display name.');

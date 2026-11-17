@@ -27,7 +27,7 @@ Keep presentation modules, stylesheet, artwork, and bootstrap behavior aligned a
 | `--text`, `--muted` | Primary and supporting text. |
 | `--accent`, `--accent-ink` | Primary actions and their foreground. |
 | `--plum`, `--grid` | X marks and illustration grid. |
-| `--line`, `--focus`, `--error` | Separators, keyboard outlines, and validation feedback. |
+| `--line`, `--control-line`, `--focus`, `--error` | Separators, higher-contrast control boundaries, keyboard outlines, and validation feedback. |
 
 Use `data-theme="dark"` or `data-theme="light"` on the document element. `game-hub-theme` stores the explicit choice; absent, invalid, or inaccessible storage defaults to dark. Both themes set the appropriate browser `color-scheme`. Navigation/banner retain a coordinated plum artwork treatment in either theme, with a light focus ring for legibility.
 

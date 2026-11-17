@@ -7,3 +7,11 @@ enable_anonymous_sign_ins = true
 
 [api]
 auto_expose_new_tables = false
+
+[auth.rate_limit]
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 30
+
+[auth.email]
+enabled = false

@@ -75,15 +75,15 @@ This phase follows guest entry and precedes lobby implementation. Existing phase
 
 Security is part of the first playable release, not an optional later addition.
 
-- [ ] Enable RLS on exposed tables with deny-by-default grants and policies. Expose only intended public lobby fields; restrict other reads and writes to the appropriate guests.
-- [ ] Tie membership and writes to `auth.uid()`. Anonymous signed-in users use the `authenticated` database role, not the unauthenticated `anon` role. Restrict host actions and membership transitions.
-- [ ] Validate field types, lengths, allowed values, capacities, and legal state transitions. Prevent players from changing another player's identity or escalating themselves to host.
-- [ ] Model access carefully: data readable by a client cannot be hidden from that client through the interface. Keep secrets and hidden game information out of publicly readable records.
-- [ ] Use transactional Postgres functions with row locking for joins, starts, and moves. Validate identity, membership, turn order, and state transitions inside each function. Restrict execution grants and audit any security-definer functions; RLS alone does not enforce game rules.
-- [ ] Write local database/RLS and API integration tests for allowed and denied actions, including unauthorized host actions, invalid moves, overfilled lobbies, and edits to another player. Test concurrent joins and moves.
-- [ ] Review Supabase usage limits and available alerts, including anonymous sign-ins and Realtime usage. Configure rate limits and consider CAPTCHA for abuse protection; these do not replace RLS or server-side validation.
+- [x] Enable RLS on exposed tables with deny-by-default grants and policies. Expose only intended public lobby fields; restrict other reads and writes to the appropriate guests.
+- [x] Tie membership and writes to `auth.uid()`. Anonymous signed-in users use the `authenticated` database role, not the unauthenticated `anon` role. Restrict host actions and membership transitions.
+- [x] Validate field types, lengths, allowed values, capacities, and legal state transitions. Prevent players from changing another player's identity or escalating themselves to host.
+- [x] Model access carefully: data readable by a client cannot be hidden from that client through the interface. Keep secrets and hidden game information out of publicly readable records.
+- [x] Use transactional Postgres functions with row locking for joins, starts, and moves. Validate identity, membership, turn order, and state transitions inside each function. Restrict execution grants and audit any security-definer functions; RLS alone does not enforce game rules.
+- [x] Write local database/RLS and API integration tests for allowed and denied actions, including unauthorized host actions, invalid moves, overfilled lobbies, and edits to another player. Test concurrent joins and moves.
+- [x] Review Supabase usage limits and available alerts, including anonymous sign-ins and Realtime usage. Configure rate limits and consider CAPTCHA for abuse protection; these do not replace RLS or server-side validation.
 
-**Milestone:** RLS, database-function, and concurrency tests pass locally, and common unauthorized actions fail from another guest session.
+**Milestone:** Complete. Local authorization, session, game-rule, and concurrency checks pass. Hosted migrations and Auth limits are applied; both sites enforce browser policies. See the [security review](docs/security-review.md) for scope, monitoring, and the CAPTCHA decision before wider release. Phase 6 adds the playable board.
 
 ## Phase 6 — Build the first playable game
 

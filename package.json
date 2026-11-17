@@ -10,9 +10,10 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
-    "test": "node --test tests/guest.test.js",
+    "test": "node --test tests/guest.test.js tests/security-policy.test.js",
     "test:e2e": "playwright test",
-    "test:lobbies": "node --env-file=.env.local scripts/test-lobbies.mjs"
+    "test:lobbies": "node --env-file=.env.local scripts/test-lobbies.mjs",
+    "test:security": "node --env-file=.env.local scripts/test-security.mjs"
   },
   "repository": {
     "type": "git",

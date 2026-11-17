@@ -71,3 +71,7 @@ The hub’s [component guide](https://github.com/Kumori1313/game-hub/blob/main/d
 The tic-tac-toe site supports public discovery, creating/joining/leaving two-player rooms, host-only start, refresh recovery, connection feedback, and interruption. A started match is a verified shared session; gameplay is still in development. See the [lobby contract](https://github.com/Kumori1313/game-hub/blob/main/docs/lobby-contract.md) for API permissions, the 90-second lease, scheduled cleanup, and the seven-day retention policy.
 
 Apply local migrations with `npx supabase migration up` before backend/browser tests. `npm run test:lobbies` exercises real local APIs and uses the local Docker database to force lease expiry and test cleanup. It never targets a hosted project. Migrations and scheduled maintenance are versioned in `supabase/migrations/`.
+
+## Backend security
+
+See the [Phase 5 review](docs/security-review.md) for authorization boundaries, move validation, request limits, deployment, monitoring, and remaining release decisions. Run `npm run test:security` against local Supabase to verify them. The playable board remains Phase 6.

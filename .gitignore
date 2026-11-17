@@ -11,3 +11,7 @@ playwright-report/
 
 # Local design references and saved third-party pages
 /UI-Ideas/
+
+# Generated CLI state for root and production configuration directories
+**/supabase/.temp/
+**/supabase/.branches/

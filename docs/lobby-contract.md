@@ -6,7 +6,7 @@ Choose tic-tac-toe from the hub to open its public lobby list. Create a room or 
 
 Waiting rooms use `?room=<UUID>`. Starting creates the shared match record and both browsers transition to `?lobby=<UUID>`. Every arrival verifies membership through the backend; a copied link does not grant a seat. Refreshing or reopening the game restores an active membership. URLs contain only the lobby UUID, never guest tokens or names.
 
-The game repository owns lobby discovery, waiting-room UI, and match entry. The hub owns the shared database configuration, migrations, and integration tests. Phase 4 initializes an empty board but deliberately has no move API or playable board; those arrive in Phase 6.
+The game repository owns lobby discovery, waiting-room UI, and match entry. The hub owns the shared database configuration, migrations, and integration tests. Phase 4 initializes an empty board. Phase 5 adds the guarded move API; Phase 6 adds the playable board.
 
 ## Data model and access
 
@@ -17,7 +17,7 @@ The game repository owns lobby discovery, waiting-room UI, and match entry. The 
 | `game_private.lobbies` | Host UUID, lifecycle, departure reason, and timestamps. |
 | `game_private.memberships` | Guest UUID, display-name label, and X/O mark. One current membership per guest; marks are unique within a room. |
 | `game_private.connections` | Separate server-timestamped lease for each tab/connection. |
-| `game_private.matches` | Match UUID, lobby, empty board, current turn, and interrupted state. |
+| `game_private.matches` | Match UUID, lobby, board, turn, revision, result, and interrupted state. |
 
 All tables have RLS. Clients receive no direct access to private tables and no writes to public tables. New public objects require explicit client grants. Trusted `service_role` defaults remain available for server administration, never browser code.
 
@@ -52,7 +52,7 @@ The integration runner targets loopback only and uses the local Docker database 
 
 Build both sites with local environment files, then run `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:e2e`. Two browser scenarios cover discovery, joining/full rooms, unauthorized links, leaving/rejoining, host start, shared URL transition, refresh, interruption, multiple tabs, mobile layout, and offline recovery. The existing guest/theme scenarios remain part of the suite.
 
-For hosted deployment, inspect migration state first and apply the reviewed migrations using an explicit remote target. Run security advisors afterward. Never edit applied migrations; add a new migration for subsequent schema changes. Reverting site code does not revert database changes. Later Phase 5 work expands adversarial coverage and abuse controls; Phase 6 adds validated moves and results.
+For hosted deployment, inspect migration state first and apply the reviewed migrations using an explicit remote target. Run security advisors afterward. Never edit applied migrations; add a new migration for subsequent schema changes. Reverting site code does not revert database changes. See the [Phase 5 review](security-review.md) for live-session checks, move validation, abuse controls, and their limits. Phase 6 adds the playable interface.
 
 ## Advisor review
 

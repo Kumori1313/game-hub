@@ -11,7 +11,8 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "test": "node --test tests/guest.test.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:lobbies": "node --env-file=.env.local scripts/test-lobbies.mjs"
   },
   "repository": {
     "type": "git",

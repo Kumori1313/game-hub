@@ -14,11 +14,11 @@ npm run supabase:start
 npm run supabase:status
 ```
 
-The existing generated configuration is preserved with anonymous sign-ins enabled, local app URLs configured, empty seed paths, and automatic Data API exposure disabled. No application tables or functions exist yet. Future migrations must explicitly grant access, enable RLS on exposed tables, and provide policies before exposing user data.
+The existing generated configuration is preserved with anonymous sign-ins enabled, local app URLs configured, empty seed paths, and automatic Data API exposure disabled. Phase 2 began with no application tables; apply the versioned Phase 4 migrations for the current lobby schema. Future migrations must explicitly grant access, enable RLS on exposed tables, and provide policies before exposing user data.
 
 Copy `.env.example` to `.env.local` in both repositories. Set the local project URL (`http://127.0.0.1:54321`) and the publishable key from Supabase status. A legacy local anon key is acceptable if the local CLI does not provide a publishable key. Never copy the secret/service-role key. Do not commit `.env.local` or redirect the complete status output into frontend environment files.
 
-Run `npm run check:backend` in each repository to verify anonymous sign-in, validated guest identity, and an empty Data API. The check only accepts loopback backends. Each run leaves a signed-out anonymous user in the local development database.
+Run `npm run check:backend` in each repository to verify anonymous sign-in, validated guest identity, and the restricted lobby Data API. The check only accepts loopback backends. Each run leaves a signed-out anonymous user in the local development database.
 
 Start the hub with `npm run dev` on port 5173 and the game on port 5174. Both use `127.0.0.1`; the different ports have separate session storage. Test shared-origin handoff on published Pages paths when Phase 3 implements guest entry. Stop the backend with `npm run supabase:stop`.
 
@@ -56,7 +56,7 @@ For rollback, revert the problematic source commit and push the revert, which re
 
 ## Verified setup
 
-Both repositories pass local anonymous sign-in, verified-identity, and empty Data API checks. Hosted anonymous sign-in and an authenticated PostgREST request also passed. Hosted OpenAPI discovery requires a secret key; use ordinary API requests for browser-safe connectivity checks. The hosted `public` schema has no tables, and the security advisor returned no findings. One-time hosted smoke tests created signed-out anonymous users.
+Both repositories pass local anonymous sign-in, verified-identity, and empty Data API checks. Hosted anonymous sign-in and an authenticated PostgREST request also passed. Hosted OpenAPI discovery requires a secret key; use ordinary API requests for browser-safe connectivity checks. Phase 2 verified an empty hosted `public` schema; Phase 4 adds the [restricted lobby schema](lobby-contract.md) and documents its advisor review. One-time hosted smoke tests created signed-out anonymous users.
 
 The reviewed production configuration is tracked separately at `config/production/supabase/config.toml` to avoid pushing development defaults to production. Inspect changes before applying:
 
@@ -65,7 +65,7 @@ npx supabase config diff --workdir config/production --remote=ivjznofekldhkochei
 npx supabase config push --workdir config/production --remote=ivjznofekldhkocheija
 ```
 
-Future application tables need versioned SQL migrations with explicit grants and RLS policies. Phase 2 introduces no application schema or privileged database functions.
+Future application tables need versioned SQL migrations with explicit grants and RLS policies. Phase 2 introduced no application schema or privileged database functions; those are now versioned by Phase 4.
 
 ## Scope
 

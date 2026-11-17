@@ -43,7 +43,7 @@ Use native links, buttons, labels, and inputs; preserve visible focus and the sk
 
 ## Future screen sketches
 
-These sketches describe presentation only. Lobbies and playable matches remain future roadmap work.
+The game site now implements lobby discovery and waiting rooms using this visual language. These sketches describe presentation; playable matches remain future roadmap work.
 
 ```text
 LOBBY DISCOVERY

@@ -87,6 +87,10 @@ test('waiting rooms survive another tab closing and recover offline state', asyn
     await page.reload();
     await expect(page.locator('#lobby-room')).toBeVisible();
     await expect(page.locator('#room-title')).not.toHaveText('Lobby closed');
+    const currentId = new URL(page.url()).searchParams.get('room');
+    await page.goto(`${baseURL}/tic-tac-toe/?room=00000000-0000-4000-8000-000000000000`);
+    await expect(page).toHaveURL(new RegExp(`room=${currentId}`));
+    await expect(page.locator('#lobby-error')).toContainText('current lobby has been restored');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await context.setOffline(true);
     await expect(page.locator('#selection')).toBeHidden();

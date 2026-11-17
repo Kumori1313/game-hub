@@ -56,7 +56,7 @@ For rollback, revert the problematic source commit and push the revert, which re
 
 ## Verified setup
 
-Both repositories pass local anonymous sign-in, verified-identity, and empty Data API checks. Hosted anonymous sign-in and an authenticated PostgREST request also passed. Hosted OpenAPI discovery requires a secret key; use ordinary API requests for browser-safe connectivity checks. Phase 2 verified an empty hosted `public` schema; Phase 4 adds the [restricted lobby schema](lobby-contract.md) and documents its advisor review. One-time hosted smoke tests created signed-out anonymous users.
+The current backend checks verify local anonymous sign-in, identity, and the restricted lobby Data API. Hosted anonymous sign-in and an authenticated PostgREST request also passed. Hosted OpenAPI discovery requires a secret key; use ordinary API requests for browser-safe connectivity checks. Phase 2 verified an empty hosted `public` schema; Phase 4 adds the [restricted lobby schema](lobby-contract.md) and documents its advisor review. One-time hosted smoke tests created signed-out anonymous users.
 
 The reviewed production configuration is tracked separately at `config/production/supabase/config.toml` to avoid pushing development defaults to production. Inspect changes before applying:
 

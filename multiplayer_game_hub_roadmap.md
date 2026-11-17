@@ -62,14 +62,14 @@ This phase follows guest entry and precedes lobby implementation. Existing phase
 
 ## Phase 4 — Lobbies and presence
 
-- [ ] Design a shared Postgres schema: game catalog, public lobby summaries, lobby membership, and match state. Use Auth user UUIDs for identity and generated UUIDs for lobbies and matches, not display names.
-- [ ] Build a live lobby list with game, lobby name, player count, capacity, and waiting/in-progress status.
-- [ ] Let guests create, join, and leave lobbies; assign the creator as host. Make joining atomic so simultaneous joins cannot exceed capacity or claim the same slot.
-- [ ] Build the waiting room and a host-only start action. Prevent starting until the required players are present.
-- [ ] Use Presence for connection indicators and authenticated, server-timestamped heartbeats for durable membership leases. Define a timeout and trusted cleanup executor for abandoned rooms; Presence leave events alone must not authorize cleanup. Aggregate multiple connections per guest and implement the Phase 1 departure policy.
-- [ ] Pass a lobby ID to the game via a URL; verify the guest belongs to that lobby when they arrive. Avoid placing credentials in URLs.
+- [x] Design a shared Postgres schema: game catalog, public lobby summaries, lobby membership, and match state. Use Auth user UUIDs for identity and generated UUIDs for lobbies and matches, not display names.
+- [x] Build a live lobby list with game, lobby name, player count, capacity, and waiting/in-progress status.
+- [x] Let guests create, join, and leave lobbies; assign the creator as host. Make joining atomic so simultaneous joins cannot exceed capacity or claim the same slot.
+- [x] Build the waiting room and a host-only start action. Prevent starting until the required players are present.
+- [x] Use Presence for connection indicators and authenticated, server-timestamped heartbeats for durable membership leases. Define a timeout and trusted cleanup executor for abandoned rooms; Presence leave events alone must not authorize cleanup. Aggregate multiple connections per guest and implement the Phase 1 departure policy.
+- [x] Pass a lobby ID to the game via a URL; verify the guest belongs to that lobby when they arrive. Avoid placing credentials in URLs.
 
-**Milestone:** Two separate browser sessions can create and join a lobby, see updates, and handle leaving or losing a connection.
+**Milestone:** Complete. Public discovery, atomic two-player rooms, host-only start, private Presence, 90-second multi-connection leases, scheduled cleanup, and verified match-entry URLs are deployed. Local API/concurrency tests and all 11 browser scenarios pass, including the published sites. See the [lobby contract](docs/lobby-contract.md). Gameplay remains Phase 6; broader adversarial and abuse-control work remains Phase 5.
 
 ## Phase 5 — Secure the shared backend
 

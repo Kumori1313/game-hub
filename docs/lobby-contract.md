@@ -59,3 +59,9 @@ For hosted deployment, inspect migration state first and apply the reviewed migr
 The missing foreign-key index reported after initial deployment is covered by the follow-up index migration. New indexes may still be listed as unused while the project has little data. The private tables intentionally have RLS with no client policies because they have no client grants and are accessed only through guarded functions; the [RLS-without-policy notice](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) reflects that deny-by-default design.
 
 The [anonymous-access notices](https://supabase.com/docs/guides/database/database-advisors?queryGroups=lint&lint=0012_auth_allow_anonymous_sign_ins) are expected for public game/lobby discovery and member-checked Presence: this platform intentionally supports signed-in anonymous guests. pg_cron’s extension-owned job policies also generate this notice; `authenticated` lacks usage on the unexposed `cron` schema, and the job’s owner is the trusted database role. Leaked-password protection remains a future account-security setting because this app has no password login.
+
+## Completion record
+
+Local backend checks, unit checks, and builds pass in both repositories. The local integration runner verifies permissions, competing joins, idempotent starts, Presence allow/deny behavior, forced lease expiry, multiple connections, retention, and creation limits. All 11 browser scenarios pass locally and on the published sites, including authorized private Presence and recovery from an invalid link while already in a room. Hosted migrations are applied and the scheduled cleanup job has completed successfully. Desktop and mobile waiting-room screenshots were reviewed.
+
+Phase 5 continues with broader adversarial and abuse-control coverage. Phase 6 implements actual tic-tac-toe moves, wins/draws, and result handling; Phase 4 provides only verified match initialization and interruption.

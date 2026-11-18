@@ -55,3 +55,7 @@ Hosted warnings remain for intentional guest-readable catalog/summary/member Pre
 ## Completion record
 
 Both repositories pass unit checks and production builds. The local lobby and security integration suites pass, including all eight winning lines, draws, ninth-move wins, duplicate/concurrent requests, revoked sessions, and denied private operations. All 13 browser scenarios pass locally and on the published GitHub Pages sites. Both Pages deployments succeeded. Hosted function definitions and grants match the reviewed boundaries, every application table has RLS, and production has zero outstanding declared configuration changes. Existing advisor notices and deferred controls are listed above. No paid resources were added.
+
+## Dependency follow-up (Phase 6)
+
+A later audit reports [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) in development-only picomatch and its Vite dependency chain. The advisory currently lists no patched version. The published static game does not include this build dependency or accept user-supplied glob patterns. Keep the development server on loopback, use trusted build inputs, and review upstream fixes before the Phase 7 release. The earlier zero-vulnerability audit is a historical result, not the current audit status.

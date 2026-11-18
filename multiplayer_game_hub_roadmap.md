@@ -87,13 +87,13 @@ Security is part of the first playable release, not an optional later addition.
 
 ## Phase 6 — Build the first playable game
 
-- [ ] Implement and test the game's rules locally: legal moves, turns, wins, draws, and reset/end behavior.
-- [ ] Connect the game to the lobby and store the minimum match state needed to synchronize players.
-- [ ] Enforce turn order and valid moves in transactional database functions. Restrict direct match-state writes so clients cannot bypass validation.
-- [ ] Handle simultaneous actions, disconnects, refreshes, and duplicate clicks. Make the current turn, result, and connection state clear.
-- [ ] Add a clear way to leave the match and return to the hub. Clean up or expire completed match data according to a documented policy.
+- [x] Implement and test the game's rules locally: legal moves, turns, wins, draws, and reset/end behavior.
+- [x] Connect the game to the lobby and store the minimum match state needed to synchronize players.
+- [x] Enforce turn order and valid moves in transactional database functions. Restrict direct match-state writes so clients cannot bypass validation.
+- [x] Handle simultaneous actions, disconnects, refreshes, and duplicate clicks. Make the current turn, result, and connection state clear.
+- [x] Add a clear way to leave the match and return to the hub. Clean up or expire completed match data according to a documented policy.
 
-**Milestone:** Two people on separate devices can play one complete game, see the same outcome, and return to the hub.
+**Milestone:** Complete. Two independent browser sessions can play X/O wins and draws, retain the same final board, and return to the hub for a fresh match. All 15 browser scenarios pass locally and on the published sites; server rule/concurrency checks pass locally. See the [gameplay contract](docs/gameplay-contract.md). Physical-device and small-group release testing remain Phase 7.
 
 ## Phase 7 — Test and release
 

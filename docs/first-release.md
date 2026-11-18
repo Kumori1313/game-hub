@@ -91,12 +91,12 @@ All screens need loading, empty, and actionable error states where applicable. C
 
 ## First-session acceptance checklist
 
-- [ ] Two independent browser sessions enter names and reach the same public lobby.
-- [ ] The host can start only when both players are connected; a third guest cannot join.
-- [ ] Both sessions agree on marks, turns, legal moves, and the final board for a win and a draw.
-- [ ] Out-of-turn moves, occupied cells, duplicate submissions, and moves after completion are rejected.
-- [ ] Leaving, connection loss, refresh, and a failed join follow the policies above with clear feedback.
-- [ ] Both players can return to the hub and begin a new session.
-- [ ] The complete flow works using a keyboard and on a narrow mobile viewport.
+- [x] Two independent browser sessions enter names and reach the same public lobby.
+- [x] The host can start only when both players are connected; a third guest cannot join.
+- [x] Both sessions agree on marks, turns, legal moves, and the final board for a win and a draw.
+- [x] Out-of-turn moves, occupied cells, duplicate submissions, and moves after completion are rejected.
+- [x] Leaving, connection loss, refresh, and a failed join follow the policies above with clear feedback.
+- [x] Both players can return to the hub and begin a new session.
+- [x] The complete flow works using a keyboard and on a narrow mobile viewport.
 
-These checks define future implementation acceptance; they have not yet been executed against an application.
+Phase 6 verifies these checks with local server tests and independent browser sessions, including published GitHub Pages paths. Draw and O-win games use Enter/Space for every move. Physical-device checks, broader accessibility review, and small-group feedback remain Phase 7. See the [gameplay contract](gameplay-contract.md).

@@ -4,6 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 const url=process.env.VITE_SUPABASE_URL, key=process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 assert.ok(['localhost','127.0.0.1'].includes(new URL(url).hostname),'Adversarial tests only run locally.');
 const guests=[];
+// Bound test requests so an unavailable local endpoint fails instead of hanging CI.
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input, options = {}) => originalFetch(input, { ...options, signal: options.signal
+  ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) });
 const validId=id=>assert.match(id,/^[a-f0-9-]{36}$/);
 function sql(query) {
   const result=spawnSync('sg',['docker','-c','docker exec -i supabase_db_game-hub psql -U postgres -d postgres -v ON_ERROR_STOP=1 -At'],{input:query,encoding:'utf8'});

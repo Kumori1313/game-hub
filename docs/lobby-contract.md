@@ -6,7 +6,7 @@ Choose tic-tac-toe from the hub to open its public lobby list. Create a room or 
 
 Waiting rooms use `?room=<UUID>`. Starting creates the shared match record and both browsers transition to `?lobby=<UUID>`. Every arrival verifies membership through the backend; a copied link does not grant a seat. Refreshing or reopening the game restores an active membership. URLs contain only the lobby UUID, never guest tokens or names.
 
-The game repository owns lobby discovery, waiting-room UI, and match entry. The hub owns the shared database configuration, migrations, and integration tests. Phase 4 initializes an empty board. Phase 5 adds the guarded move API; Phase 6 adds the playable board.
+The game repository owns lobby discovery, waiting-room UI, and match entry. The hub owns the shared database configuration, migrations, and integration tests. Phase 4 initializes an empty board. Phase 5 adds the guarded move API; Phase 6 adds the [playable board](gameplay-contract.md).
 
 ## Data model and access
 
@@ -52,7 +52,7 @@ The integration runner targets loopback only and uses the local Docker database 
 
 Build both sites with local environment files, then run `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:e2e`. Two browser scenarios cover discovery, joining/full rooms, unauthorized links, leaving/rejoining, host start, shared URL transition, refresh, interruption, multiple tabs, mobile layout, and offline recovery. The existing guest/theme scenarios remain part of the suite.
 
-For hosted deployment, inspect migration state first and apply the reviewed migrations using an explicit remote target. Run security advisors afterward. Never edit applied migrations; add a new migration for subsequent schema changes. Reverting site code does not revert database changes. See the [Phase 5 review](security-review.md) for live-session checks, move validation, abuse controls, and their limits. Phase 6 adds the playable interface.
+For hosted deployment, inspect migration state first and apply the reviewed migrations using an explicit remote target. Run security advisors afterward. Never edit applied migrations; add a new migration for subsequent schema changes. Reverting site code does not revert database changes. See the [Phase 5 review](security-review.md) for live-session checks, move validation, abuse controls, and their limits. See the [gameplay contract](gameplay-contract.md) for the playable interface and faster active-match polling.
 
 ## Advisor review
 
@@ -64,4 +64,4 @@ The [anonymous-access notices](https://supabase.com/docs/guides/database/databas
 
 Local backend checks, unit checks, and builds pass in both repositories. The local integration runner verifies permissions, competing joins, idempotent starts, Presence allow/deny behavior, forced lease expiry, multiple connections, retention, and creation limits. All 11 browser scenarios pass locally and on the published sites, including authorized private Presence and recovery from an invalid link while already in a room. Hosted migrations are applied and the scheduled cleanup job has completed successfully. Desktop and mobile waiting-room screenshots were reviewed.
 
-Phase 5 continues with broader adversarial and abuse-control coverage. Phase 6 implements actual tic-tac-toe moves, wins/draws, and result handling; Phase 4 provides only verified match initialization and interruption.
+This completion record describes Phase 4. Phase 5 subsequently added guarded moves and abuse controls; Phase 6 adds the [playable interface and game verification](gameplay-contract.md).

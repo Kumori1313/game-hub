@@ -47,15 +47,15 @@ test('two guests discover, join, leave, start, refresh, and interrupt a shared m
     await host.getByRole('button', { name: 'Start game', exact: true }).click();
     for (const page of [host,guest]) {
       await expect(page).toHaveURL(new RegExp(`lobby=${id}`), { timeout: 15000 });
-      await expect(page.locator('#room-title')).toHaveText('Match ready');
-      await expect(page.locator('#room-message')).toContainText('Gameplay is in development');
+      await expect(page.locator('#room-title')).toHaveText('Tic-Tac-Toe');
+      await expect(page.locator('#room-message')).toContainText(page === host ? 'Your turn (X).' : 'Waiting for X.');
     }
     await guest.reload();
     await expect(guest.locator('#room-members li')).toHaveCount(2);
-    await expect(guest.locator('#room-title')).toHaveText('Match ready');
+    await expect(guest.locator('#room-title')).toHaveText('Tic-Tac-Toe');
     host.on('dialog', dialog => dialog.accept());
     await host.getByRole('button', { name: 'Leave match', exact: true }).click();
-    await expect(guest.locator('#room-title')).toHaveText('Lobby closed', { timeout: 15000 });
+    await expect(guest.locator('#room-title')).toHaveText('Match interrupted', { timeout: 15000 });
     await expect(guest.locator('#room-message')).toContainText('host left');
     await guest.getByRole('button', { name: 'Back to lobbies', exact: true }).click();
     await expect(guest.locator('#lobby-discovery')).toBeVisible();

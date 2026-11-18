@@ -127,8 +127,9 @@ Security is part of the first playable release, not an optional later addition.
 - [x] Implement secure shuffling/dealing, rotating dealer/blinds, legal betting/raises/folds, all-ins, side pots, split pots, and correct payouts.
 - [x] Continue through multiple hands in the same table. Define trusted turn deadlines, disconnect/rejoin behavior, departures, and table ownership.
 - [x] Test rule fixtures, chip conservation, concurrent/stale actions, hidden-card isolation, and complete multi-player hands before publishing gameplay.
+- [x] Add host-managed bots and mixed human/bot tables with shared seat limits, private decision inputs, and legal server-side turns.
 
-**Milestone:** Complete. Play-money No-Limit Hold’em is deployed for 2–6 players with private cards, validated bets, side/split pots, trusted deadlines, host transfer, and successive hands. All 21 browser scenarios pass locally in Chromium and Firefox; three focused published scenarios pass. Rule/accounting fixtures and legacy-data migration replay pass. See the [Hold’em contract](docs/poker-contract.md) and [release report](docs/release-report.md). Fixed 1,000-chip stacks, 10/20 blinds, and a 30-second clock remain until 8.3 adds settings.
+**Milestone:** Complete. Play-money No-Limit Hold’em is deployed for 2–6 players with private cards, validated bets, side/split pots, trusted deadlines, host transfer, successive hands, and optional bot seats. All 23 browser scenarios pass locally in Chromium and Firefox; three focused published scenarios pass. Rule/accounting fixtures and legacy-data migration replay pass. See the [Hold’em contract](docs/poker-contract.md) and [release report](docs/release-report.md). Fixed 1,000-chip stacks, 10/20 blinds, and a 30-second clock remain until 8.3 adds settings.
 
 ### Milestone 8.3 — Configurable poker tables
 

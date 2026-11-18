@@ -63,3 +63,9 @@ A later audit reports [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-f
 ## Milestone 8.1 extension
 
 The [version 2 room contract](shared-room-contract.md) adds code-only rooms and private rematch votes without client table grants. Invalid code replies commit request-budget usage. Match-bound moves and round-aware snapshots reject stale actions across rematches; host privileges are independent of randomly assigned marks. The migration preserves first-round legacy clients and was replayed against existing-room fixtures before production deployment. Poker has no dealing or hidden-card state yet; start is rejected by the backend.
+
+## Hold’em additions (8.2)
+
+Poker cards, deck order, chip commitments, and hand history live in three private RLS-enabled tables without browser grants. A session-validated internal definer implements the public invoker RPC; helpers are not executable by guest roles. Room locks, exact hand/revision checks, bounded integer bets, and chip conservation protect mutations. Snapshots expose only the caller's hole cards before showdown, then nonfolded showdown hands; folded cards and future community cards remain private. Presence never transports cards or game state.
+
+The engine is deployed before the new client; a separate catalog migration enables new hands afterward. Disabling that flag stops new starts/deals while allowing active hands to finish. The old room-start endpoint cannot launch unsupported poker gameplay. Local fixtures cover unauthorized actors/grants, concurrent/stale moves, and card isolation. No payment, withdrawal, or real-money features are implemented.

@@ -29,18 +29,19 @@ try {
  let state=await call(host,'snapshot',id);
  assert.equal(state.capacity,6);assert.equal(state.members.length,6);
  assert.deepEqual(state.members.map(m=>m.seat),[1,2,3,4,5,6]);assert.ok(state.members.every(m=>m.mark===null));
- assert.equal(state.playable,false);await denied(host,'start',id);assert.equal(sql(`select count(*) from game_private.matches where lobby_id='${id}'`),'0');
+ assert.equal(state.playable,true);assert.equal(sql(`select count(*) from game_private.matches where lobby_id='${id}'`),'0');
  const admitted=members.find((g,i)=>!race[i].error);
  await call(admitted,'leave',id);await call(outsider,'join',id);
  assert.equal((await call(host,'snapshot',id)).members.length,6);
  await denied(outsider,'start',id);
+ await denied(host,'start',id);const begin=await host.client.rpc('poker_action',{p_lobby:id,p_action:'start'});assert.ifError(begin.error);assert.equal((await call(host,'snapshot',id)).poker.hand_no,1);
  await leaveAll();
  // A host-selected lower capacity is authoritative even though poker supports six.
  id=await call(host,'create',null,{p_capacity:3});
  const smaller=await Promise.all(members.slice(0,3).map(g=>request(g,'join',id)));
  assert.equal(smaller.filter(r=>!r.error).length,2);assert.equal((await call(host,'snapshot',id)).members.length,3);
  await leaveAll();
- console.log('PASS: 2–6 seat capacity validation, six-way joins, bounded smaller rooms, seat reuse, and disabled poker start.');
+ console.log('PASS: 2–6 seat capacity validation, six-way joins, bounded smaller rooms, seat reuse, and host-only poker start.');
 
  id=await call(host,'create',null,{p_capacity:3,p_visibility:'private'});
  state=await call(host,'snapshot',id);const code=state.join_code;assert.match(code,/^[A-F0-9]{16}$/);

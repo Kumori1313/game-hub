@@ -76,7 +76,7 @@ test('private tic-tac-toe requires a code and rematches preserve the room while 
  }finally{if(held) await held.route.fulfill({response:held.response}).catch(()=>{});await close([host,guest,outsider],contexts);}
 });
 
-test('poker preview shares hub identity and enforces a six-seat table without starting gameplay',async({browser,baseURL})=>{
+test('poker lobby shares hub identity and enforces a six-seat table without starting gameplay',async({browser,baseURL})=>{
  test.setTimeout(120000);
  const contexts=await Promise.all(Array.from({length:7},()=>browser.newContext({viewport:{width:390,height:844}})));
  const pages=await Promise.all(contexts.map(c=>c.newPage()));const [host,...guests]=pages;
@@ -105,8 +105,8 @@ test('poker preview shares hub identity and enforces a six-seat table without st
   await guests[5].getByRole('button',{name:'Refresh',exact:true}).click();
   await expect(guests[5].locator(`[data-lobby-id="${id}"]`)).toContainText('6/6');
   await expect(guests[5].locator(`[data-lobby-id="${id}"]`).getByRole('button',{name:'Full',exact:true})).toBeDisabled();
-  await expect(host.getByRole('button',{name:'Start game',exact:true})).toBeHidden();
-  await expect(host.locator('#room-message')).toHaveText('Poker gameplay is not available yet.');
+  await expect(host.getByRole('button',{name:'Start game',exact:true})).toBeEnabled();
+  await expect(host.locator('#room-message')).toHaveText('1,000 play chips · 10/20 blinds · 30-second turns');
   await host.setViewportSize({width:320,height:740});
   expect(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await host.screenshot({path:'/tmp/game-hub-poker-lobby.png',fullPage:true});

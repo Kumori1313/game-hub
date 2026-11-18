@@ -60,3 +60,16 @@ During the pilot, review usage daily and after each test session: anonymous sign
 ## Third site and room contract
 
 Milestone 8.1 adds the poker checkout/build to release checks and the `/poker/` Pages path. Build/test all three repositories with matching local settings. Include `tests/browser/shared-rooms.spec.js` in focused published checks. The [version 2 room contract](shared-room-contract.md) specifies private codes, retained rematch rooms, capacity, migration compatibility, and stale-round protection. No paid service is required by this extension.
+
+## Hold’em rollout
+
+The poker engine migration adds private tables and an authenticated action RPC while leaving the existing catalog flag disabled. Publish the updated poker client before applying the separate `enable_holdem` data migration. Old lobby-preview pages cannot start hands through their original room endpoint; they receive a refresh prompt. To suspend new tables/hands, deploy a versioned migration setting poker's `playable` flag to false. Existing betting and settlement remain available so active hands can finish.
+
+Use `npm run test:poker` for local rule/accounting fixtures. `test:release` includes this suite and the legacy-data upgrade replay. Supply both game checkouts, for example:
+
+```bash
+GAME_SITE_DIR=/path/to/tic-tac-toe POKER_SITE_DIR=/path/to/poker npm run test:release
+GAME_SITE_DIR=/path/to/tic-tac-toe POKER_SITE_DIR=/path/to/poker E2E_BROWSER=firefox npm run test:e2e
+```
+
+The focused published poker suite completes a heads-up hand, starts another, and tests a three-player host departure. Do not run the local fixture scripts against production. See the [Hold’em contract](poker-contract.md) for fixed rules and privacy guarantees.

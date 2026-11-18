@@ -82,6 +82,10 @@ Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe POKER_SITE_DIR=/absolute/path/t
 
 ## Shared rooms (milestone 8.1)
 
-Rooms can be public or code-only. Tic-tac-toe retains two seats; the poker lobby preview supports host-selected capacity from two to six. Completed tic-tac-toe games offer a rematch when both connected players agree. The initial X player is random, and rematches swap marks independently of hosting.
+Rooms can be public or code-only. Tic-tac-toe retains two seats; poker supports host-selected capacity from two to six. Completed tic-tac-toe games offer a rematch when both connected players agree. The initial X player is random, and rematches swap marks independently of hosting.
 
 The hub’s [shared room contract](https://github.com/Kumori1313/game-hub/blob/main/docs/shared-room-contract.md) documents the versioned API, previous-client compatibility, private codes, and round safety. Release checks now require both `GAME_SITE_DIR` and `POKER_SITE_DIR`, and verify all three repositories.
+
+## Poker (milestone 8.2)
+
+Play-money No-Limit Hold’em supports 2–6 players, private hole cards, server-authoritative bets and payouts, and successive hands in the same room. Defaults are 1,000 chips each, 10/20 blinds, and a 30-second turn clock. Table settings follow in 8.3. See the [Hold’em contract](docs/poker-contract.md). Run `npm run test:poker` against local Supabase for rule, privacy, and chip-accounting fixtures.

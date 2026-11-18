@@ -51,3 +51,7 @@ E2E_BROWSER=firefox GAME_SITE_DIR=/path/to/tic-tac-toe POKER_SITE_DIR=/path/to/p
 ```
 
 Build all three sites before browser-only checks. Integration scripts target local Docker/Supabase only. Tests cover six-way competing joins, smaller capacities, seat reuse, private discovery/admission, persistent failed-code accounting, cross-game rejection, consent cancellation and duplicate votes, mark swapping, prior results, stale moves/replies, and the existing full game flow. Published tests create real anonymous test users, so use a focused suite below provider signup limits.
+
+## Poker gameplay (8.2)
+
+Started poker rooms use `poker_action` with a hand UUID and revision. Authorized room snapshots include a caller-specific `poker` view; `match` remains reserved for tic-tac-toe. Private deck/players/history tables are never exposed to clients or Realtime. Shared connection leases and room admission still apply; poker departures transfer ownership instead of aborting the table. See the [Hold’em contract](poker-contract.md) for rules, payouts, deadlines, and recovery.

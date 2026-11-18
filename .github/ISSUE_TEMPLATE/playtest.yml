@@ -1,0 +1,34 @@
+name: Playtest feedback
+description: Report a problem or result from a Game Hub playtest.
+title: "Playtest: "
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Firefox on Fedora desktop, Safari on iPhone, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and expected result
+      description: Include which player hosted and which action each player took.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include visible error text and whether both players saw the same board. Screenshots are welcome. Do not include tokens, keys, or browser storage exports.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Impact
+      options:
+        - Unable to join or finish a game
+        - Incorrect move, turn, or result
+        - Layout, keyboard, or readability problem
+        - Successful test or other feedback

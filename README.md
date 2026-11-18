@@ -75,3 +75,7 @@ Apply local migrations with `npx supabase migration up` before backend/browser t
 ## Backend security
 
 See the [Phase 5 review](docs/security-review.md) for authorization boundaries, move validation, request limits, deployment, monitoring, and remaining release decisions. Run `npm run test:security` against local Supabase to verify them. The [Phase 6 gameplay contract](docs/gameplay-contract.md) covers the playable board, synchronization, and recovery.
+
+## Release verification
+
+Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:release` with local Supabase to check both repositories and the full flow. Set `E2E_BROWSER=firefox` for a second browser engine. See the [release runbook](docs/release-runbook.md), [verification report](docs/release-report.md), and [small-group playtest guide](docs/playtest-guide.md).

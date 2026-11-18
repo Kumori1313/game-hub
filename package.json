@@ -13,7 +13,8 @@
     "test": "node --test tests/guest.test.js tests/security-policy.test.js",
     "test:e2e": "playwright test",
     "test:lobbies": "node --env-file=.env.local scripts/test-lobbies.mjs",
-    "test:security": "node --env-file=.env.local scripts/test-security.mjs"
+    "test:security": "node --env-file=.env.local scripts/test-security.mjs",
+    "test:release": "node scripts/check-release.mjs"
   },
   "repository": {
     "type": "git",

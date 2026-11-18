@@ -97,14 +97,14 @@ Security is part of the first playable release, not an optional later addition.
 
 ## Phase 7 — Test and release
 
-- [ ] Test the entire flow on published GitHub Pages URLs with two independent browsers or devices, including asset paths and guest-session handoff.
-- [ ] Test full lobbies, simultaneous joins, illegal actions, refreshes, lost connections, host departure, and stale-room cleanup.
-- [ ] Check mobile layouts, keyboard navigation, readable contrast, and clear error messages.
-- [ ] Deploy reviewed SQL migrations, RLS policies, database functions, and site builds. Confirm production settings and usage alerts; never expose unrestricted test policies.
+- [x] Test the entire flow on published GitHub Pages URLs with two independent browsers or devices, including asset paths and guest-session handoff.
+- [x] Test full lobbies, simultaneous joins, illegal actions, refreshes, lost connections, host departure, and stale-room cleanup.
+- [x] Check mobile layouts, keyboard navigation, readable contrast, and clear error messages.
+- [x] Deploy reviewed SQL migrations, RLS policies, database functions, and site builds. Confirm production settings and usage alerts; never expose unrestricted test policies.
 - [ ] Invite a small group to try the game, record problems and feedback, and fix the highest-impact issues.
-- [ ] Document deployment, rollback, troubleshooting, and the data/cleanup policy in the repositories.
+- [x] Document deployment, rollback, troubleshooting, and the data/cleanup policy in the repositories.
 
-**Milestone:** A small group can reliably discover, join, and complete a game on the live sites.
+**Milestone:** Automated release verification passed: 17 scenarios in each of Chromium and Firefox locally, four published release/gameplay scenarios, backend checks, and production settings/cleanup review. The owner confirms two-browser self-play and full-room rejection. Phase 7 remains open for a small-group trial on separate devices and recorded feedback. See the [release report](docs/release-report.md), [runbook](docs/release-runbook.md), and [playtest guide](docs/playtest-guide.md).
 
 ## Phase 8 — Expand the platform
 

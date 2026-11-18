@@ -9,8 +9,8 @@ npm ci
 npm run supabase:start
 npx supabase migration up
 npx playwright install chromium firefox
-GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:release
-E2E_BROWSER=firefox GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:e2e
+GAME_SITE_DIR=/absolute/path/to/tic-tac-toe POKER_SITE_DIR=/absolute/path/to/poker npm run test:release
+E2E_BROWSER=firefox GAME_SITE_DIR=/absolute/path/to/tic-tac-toe POKER_SITE_DIR=/absolute/path/to/poker npm run test:e2e
 ```
 
 Install the game's locked dependencies with `npm ci` in that checkout too. The release command validates local settings, tests/builds both apps, runs backend permissions/rules/concurrency/cleanup checks, then serves both builds for browser tests. It stops on failure. Docker group membership is required by the local administrative fixtures. Builds must finish before the test server starts; do not rebuild while browser tests run. Different dev-server ports do not share saved sessions; the test server serves both project paths on one origin.
@@ -56,3 +56,7 @@ During the pilot, review usage daily and after each test session: anonymous sign
 | Missing assets or 404 | Check both Pages deployments and `/game-hub/` / `/tic-tac-toe/` Vite base paths. |
 | Backend unavailable | Check Supabase project status and usage, then the browser's project URL. Never substitute a secret key. |
 | Docker permission denied | Activate the existing Docker group (`sg docker -c 'command'`) or sign in again; avoid running npm with sudo. |
+
+## Third site and room contract
+
+Milestone 8.1 adds the poker checkout/build to release checks and the `/poker/` Pages path. Build/test all three repositories with matching local settings. Include `tests/browser/shared-rooms.spec.js` in focused published checks. The [version 2 room contract](shared-room-contract.md) specifies private codes, retained rematch rooms, capacity, migration compatibility, and stale-round protection. No paid service is required by this extension.

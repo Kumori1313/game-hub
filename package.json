@@ -14,7 +14,9 @@
     "test:e2e": "playwright test",
     "test:lobbies": "node --env-file=.env.local scripts/test-lobbies.mjs",
     "test:security": "node --env-file=.env.local scripts/test-security.mjs",
-    "test:release": "node scripts/check-release.mjs"
+    "test:release": "node scripts/check-release.mjs",
+    "test:rooms": "node --env-file=.env.local scripts/test-rooms.mjs",
+    "test:upgrade": "node scripts/test-room-upgrade.mjs"
   },
   "repository": {
     "type": "git",

@@ -20,14 +20,15 @@ async function startMatch(host, guest) {
     await expect(page.locator('#match-board')).toBeVisible();
     await expect(page.locator('#match-board')).toHaveAttribute('data-revision', '0');
   }
-  return id;
+  return (await host.locator('#room-message').textContent()) === 'Your turn (X).' ? [host,guest] : [guest,host];
 }
 async function revision(pages, value) {
   for (const page of pages) await expect(page.locator('#match-board')).toHaveAttribute('data-revision', String(value), { timeout: 10000 });
 }
 async function play(host, guest, moves) {
+  const [x,o] = (await host.locator('#room-message').textContent()) === 'Your turn (X).' ? [host,guest] : [guest,host];
   for (const [index, position] of moves.entries()) {
-    const player = index % 2 ? guest : host;
+    const player = index % 2 ? o : x;
     await expect(cell(player, position)).toBeEnabled();
     await cell(player, position).focus();
     await player.keyboard.press(index % 2 ? 'Space' : 'Enter');
@@ -53,25 +54,25 @@ test('two guests finish X/O wins and a draw, retain results, and start fresh fro
   try {
     await enter(host, baseURL, `Play-${Date.now().toString(36)}`);
     await enter(guest, baseURL, 'Guest');
-    await startMatch(host, guest);
-    await expect(host.locator('#room-message')).toHaveText('Your turn (X).');
-    await expect(guest.locator('#match-board button:enabled')).toHaveCount(0);
+    let [x,o] = await startMatch(host, guest);
+    await expect(x.locator('#room-message')).toHaveText('Your turn (X).');
+    await expect(o.locator('#match-board button:enabled')).toHaveCount(0);
     let submitted = 0;
-    host.on('request', request => { if (request.url().endsWith('/rpc/play_move')) submitted++; });
-    await cell(host, 0).focus();
-    await host.keyboard.press('Enter');
-    await revision([host, guest], 1);
+    x.on('request', request => { if (request.url().endsWith('/rpc/submit_move')) submitted++; });
+    await cell(x, 0).focus();
+    await x.keyboard.press('Enter');
+    await revision([x, o], 1);
     expect(submitted).toBe(1);
-    await guest.reload();
-    await revision([guest], 1);
-    await expect(cell(guest, 0)).toBeDisabled();
-    await expect(cell(guest, 0)).toHaveAccessibleName('Row 1, column 1: X');
-    for (const [position, player, next] of [[3,guest,2],[1,host,3],[4,guest,4],[2,host,5]]) {
-      await expect(cell(player, position)).toBeEnabled(); await cell(player, position).click(); await revision([host,guest], next);
+    await o.reload();
+    await revision([o], 1);
+    await expect(cell(o, 0)).toBeDisabled();
+    await expect(cell(o, 0)).toHaveAccessibleName('Row 1, column 1: X');
+    for (const [position, player, next] of [[3,o,2],[1,x,3],[4,o,4],[2,x,5]]) {
+      await expect(cell(player, position)).toBeEnabled(); await cell(player, position).click(); await revision([x,o], next);
     }
-    await expect(host.locator('#room-message')).toHaveText('You won (X).');
-    await expect(guest.locator('#room-message')).toHaveText('X won.');
-    for (const page of [host,guest]) {
+    await expect(x.locator('#room-message')).toHaveText('You won (X).');
+    await expect(o.locator('#room-message')).toHaveText('X won.');
+    for (const page of [x,o]) {
       await expect(page.locator('.winning-cell')).toHaveCount(3);
       await expect(page.locator('#match-board button:enabled')).toHaveCount(0);
     }
@@ -79,7 +80,7 @@ test('two guests finish X/O wins and a draw, retain results, and start fresh fro
     await host.screenshot({ path: '/tmp/game-hub-phase6-win-dark.png', fullPage: true });
     await guest.getByRole('button', { name: 'Back to lobbies', exact: true }).click();
     await host.reload();
-    await expect(host.locator('#room-message')).toHaveText('You won (X).');
+    await expect(host.locator('#room-message')).toHaveText(host === x ? 'You won (X).' : 'X won.');
     await revision([host], 5);
     await host.getByRole('link', { name: 'Back to Game Hub', exact: true }).click();
     await expect(host).toHaveURL(/\/game-hub\/$/);
@@ -99,10 +100,10 @@ test('two guests finish X/O wins and a draw, retain results, and start fresh fro
     expect(Math.abs(size.width - size.height)).toBeLessThan(1);
     await guest.screenshot({ path: '/tmp/game-hub-phase6-draw-light-mobile.png', fullPage: true });
     for (const page of [host,guest]) await page.getByRole('button', { name: 'Back to lobbies', exact: true }).click();
-    await startMatch(host, guest);
+    [x,o] = await startMatch(host, guest);
     await play(host, guest, [0,3,1,4,8,5]);
-    await expect(host.locator('#room-message')).toHaveText('O won.');
-    await expect(guest.locator('#room-message')).toHaveText('You won (O).');
+    await expect(x.locator('#room-message')).toHaveText('O won.');
+    await expect(o.locator('#room-message')).toHaveText('You won (O).');
     for (const page of [host,guest]) {
       await page.getByRole('link', { name: 'Back to Game Hub', exact: true }).click();
       await expect(page).toHaveURL(/\/game-hub\/$/);
@@ -113,15 +114,15 @@ test('two guests finish X/O wins and a draw, retain results, and start fresh fro
 test('pending, late, and lost move replies preserve confirmed state without duplicate clicks', async ({ browser, baseURL }) => {
   test.setTimeout(90000);
   const contexts = await Promise.all([0,1].map(() => browser.newContext()));
-  const [host,guest] = await Promise.all(contexts.map(context => context.newPage()));
+  let [host,guest] = await Promise.all(contexts.map(context => context.newPage()));
   let held;
   try {
     await enter(host, baseURL, `Recovery-${Date.now().toString(36)}`);
     await enter(guest, baseURL, 'Opponent');
-    await startMatch(host,guest);
+    [host,guest]=await startMatch(host,guest);
     let requests = 0;
     const hold = async route => { requests++; held = { route, response: await route.fetch() }; };
-    await host.route('**/rpc/play_move', hold);
+    await host.route('**/rpc/submit_move', hold);
     await cell(host,0).evaluate(button => { button.click(); button.click(); });
     await expect.poll(() => Boolean(held)).toBe(true);
     await expect(host.locator('#match-board button:enabled')).toHaveCount(0);
@@ -131,22 +132,22 @@ test('pending, late, and lost move replies preserve confirmed state without dupl
     await cell(guest,4).click();
     await revision([host,guest],2);
     await held.route.fulfill({ response: held.response }); held = null;
-    await host.unroute('**/rpc/play_move',hold);
+    await host.unroute('**/rpc/submit_move',hold);
     await expect(host.locator('#room-message')).toHaveText('Your turn (X).');
     await revision([host],2);
     // The request commits, but its reply is lost. The UI must reconcile instead of replaying it.
     let lostRequests = 0;
     const lose = async route => { lostRequests++; await route.fetch(); await route.abort('failed'); };
-    await host.route('**/rpc/play_move',lose);
+    await host.route('**/rpc/submit_move',lose);
     await cell(host,1).click();
     await revision([host,guest],3);
     await expect(host.locator('#room-message')).toHaveText('Waiting for O.');
     await expect(host.locator('#lobby-error')).toBeEmpty();
     expect(lostRequests).toBe(1);
-    await host.unroute('**/rpc/play_move',lose);
-    await contexts[1].setOffline(true);
+    await host.unroute('**/rpc/submit_move',lose);
+    await guest.context().setOffline(true);
     await expect(guest.locator('#selection')).toBeHidden();
-    await contexts[1].setOffline(false);
+    await guest.context().setOffline(false);
     await expect(cell(guest,2)).toBeEnabled();
     await revision([guest],3);
     await guest.reload();
@@ -156,13 +157,13 @@ test('pending, late, and lost move replies preserve confirmed state without dupl
     // A request that never answers times out, unlocks after a snapshot, and is not replayed.
     let stalledRequests = 0;
     const stall = route => { stalledRequests++; };
-    await host.route('**/rpc/play_move', stall);
+    await host.route('**/rpc/submit_move', stall);
     await cell(host,6).click();
     await expect(host.locator('#room-message')).toHaveText('Submitting move…');
     await expect(host.locator('#room-message')).toHaveText('Your turn (X).', { timeout: 20000 });
     await revision([host,guest],4);
     expect(stalledRequests).toBe(1);
-    await host.unroute('**/rpc/play_move', stall);
+    await host.unroute('**/rpc/submit_move', stall);
     // Leaving during play ends it for the other player without awarding a result.
     host.on('dialog', dialog => dialog.accept());
     await host.getByRole('button', { name: 'Leave match', exact: true }).click();

@@ -48,7 +48,7 @@ test('two guests discover, join, leave, start, refresh, and interrupt a shared m
     for (const page of [host,guest]) {
       await expect(page).toHaveURL(new RegExp(`lobby=${id}`), { timeout: 15000 });
       await expect(page.locator('#room-title')).toHaveText('Tic-Tac-Toe');
-      await expect(page.locator('#room-message')).toContainText(page === host ? 'Your turn (X).' : 'Waiting for X.');
+      await expect(page.locator('#room-message')).toHaveText(/Your turn|Waiting for X/);
     }
     await guest.reload();
     await expect(guest.locator('#room-members li')).toHaveCount(2);

@@ -79,3 +79,9 @@ See the [Phase 5 review](docs/security-review.md) for authorization boundaries, 
 ## Release verification
 
 Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:release` with local Supabase to check both repositories and the full flow. Set `E2E_BROWSER=firefox` for a second browser engine. See the [release runbook](docs/release-runbook.md), [verification report](docs/release-report.md), and [small-group playtest guide](docs/playtest-guide.md).
+
+## Shared rooms (milestone 8.1)
+
+Rooms can be public or code-only. Tic-tac-toe retains two seats; the poker lobby preview supports host-selected capacity from two to six. Completed tic-tac-toe games offer a rematch when both connected players agree. The initial X player is random, and rematches swap marks independently of hosting.
+
+The hub’s [shared room contract](https://github.com/Kumori1313/game-hub/blob/main/docs/shared-room-contract.md) documents the versioned API, previous-client compatibility, private codes, and round safety. Release checks now require both `GAME_SITE_DIR` and `POKER_SITE_DIR`, and verify all three repositories.

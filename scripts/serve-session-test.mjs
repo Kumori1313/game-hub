@@ -4,6 +4,7 @@ import { resolve, extname, sep } from 'node:path';
 
 const roots = {
   'game-hub': resolve('dist'),
+  'poker': resolve(process.env.POKER_SITE_DIR ?? '../poker', 'dist'),
   'tic-tac-toe': resolve(process.env.GAME_SITE_DIR ?? '../tic-tac-toe', 'dist'),
 };
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };

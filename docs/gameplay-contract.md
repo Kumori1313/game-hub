@@ -38,3 +38,7 @@ For a deployment, publish reviewed game code and run the same browser suite with
 ## Completion record
 
 Both repositories pass unit checks and builds. Local server authorization, game-rule, and concurrency tests pass. All 15 browser scenarios pass locally and on the published sites, including complete keyboard-operated draw/O-win games and 12-second request timeout recovery. Desktop dark and 320-pixel light screenshots were reviewed. The game deployment succeeded at commit `34729da`. No database migration or paid resource was added. Physical-device testing and small-group feedback remain part of Phase 7.
+
+## Milestone 8.1 changes
+
+New rooms randomly assign X independently of the host. After completion, both connected players can accept an in-room rematch; the next round swaps marks and preserves the room. Finished rooms continue heartbeats/polling while players decide. Moves now use `submit_move` with the current match UUID; delayed requests and snapshots cannot affect a subsequent round. Prior one-match-only behavior above describes Phase 6. See the [version 2 contract](shared-room-contract.md).

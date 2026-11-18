@@ -65,3 +65,7 @@ The [anonymous-access notices](https://supabase.com/docs/guides/database/databas
 Local backend checks, unit checks, and builds pass in both repositories. The local integration runner verifies permissions, competing joins, idempotent starts, Presence allow/deny behavior, forced lease expiry, multiple connections, retention, and creation limits. All 11 browser scenarios pass locally and on the published sites, including authorized private Presence and recovery from an invalid link while already in a room. Hosted migrations are applied and the scheduled cleanup job has completed successfully. Desktop and mobile waiting-room screenshots were reviewed.
 
 This completion record describes Phase 4. Phase 5 subsequently added guarded moves and abuse controls; Phase 6 adds the [playable interface and game verification](gameplay-contract.md).
+
+## Version 2 extension
+
+The [shared room contract](shared-room-contract.md) supersedes the original two-seat/one-match assumptions for new clients. It adds game-specific capacities, code-only rooms, randomized initial marks, and consent-based rematches. Tic-tac-toe remains two-player; poker is a 2–6-seat waiting-room preview until milestone 8.2. The original RPC wrappers remain for first-round compatibility.

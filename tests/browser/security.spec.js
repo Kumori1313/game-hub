@@ -20,7 +20,7 @@ test('browser policy blocks unapproved inline scripts while preserving theme ini
 });
 
 test('ended-session responses return the guest to entry without retaining stale credentials', async ({ page }) => {
-  await page.route('**/rest/v1/rpc/lobby_action', route => route.fulfill({
+  await page.route('**/rest/v1/rpc/room_action', route => route.fulfill({
     status: 401, contentType: 'application/json',
     body: JSON.stringify({ code: 'PT401', message: 'Your session ended. Sign in again.' }),
   }));

@@ -20,12 +20,12 @@ test('two browsers competing for the last seat admit exactly one guest', async (
     for (const [index, page] of guests.entries()) {
       await enter(page, baseURL, `Contender ${index+1}`);
       await expect(page.locator(`[data-lobby-id="${id}"]`)).toBeVisible();
-      await page.route('**/rpc/lobby_action', route => {
+      await page.route('**/rpc/room_action', route => {
         if (route.request().postDataJSON()?.p_action === 'join') held.push(route);
         else return route.continue();
       });
     }
-    const replies = guests.map(page => page.waitForResponse(response => response.url().endsWith('/rpc/lobby_action')
+    const replies = guests.map(page => page.waitForResponse(response => response.url().endsWith('/rpc/room_action')
       && response.request().postDataJSON()?.p_action === 'join'));
     await Promise.all(guests.map(page => page.locator(`[data-lobby-id="${id}"]`).getByRole('button', { name: 'Join', exact: true }).click()));
     await expect.poll(() => held.length).toBe(2);

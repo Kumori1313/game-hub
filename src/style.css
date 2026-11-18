@@ -170,3 +170,5 @@ input[aria-invalid='true'] { border-color: var(--error); }
   .content-layout { padding-top: 28px; gap: 28px; }
   .diagram-wrap { padding-top: 8px; }
 }
+
+.catalog-extra { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 24px; }

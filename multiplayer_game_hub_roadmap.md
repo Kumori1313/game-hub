@@ -133,11 +133,11 @@ Security is part of the first playable release, not an optional later addition.
 
 ### Milestone 8.3 — Configurable poker tables
 
-- [ ] Add bounded host settings for starting chips, blinds, turn timer, player limit, and rebuy policy. Show the agreed settings to players before play.
-- [ ] Lock or explicitly agree setting changes between hands; never rewrite an active hand’s rules.
-- [ ] Verify settings validation, defaults, mobile controls, reconnects, and saved table configuration.
+- [x] Add bounded host settings for starting chips, blinds, turn timer, player limit, and rebuy policy. Show the agreed settings to players before play.
+- [x] Lock or explicitly agree setting changes between hands; never rewrite an active hand’s rules.
+- [x] Verify settings validation, defaults, mobile controls, reconnects, and saved table configuration.
 
-**Milestone:** Guests can create a configurable, reliable play-money Hold’em table.
+**Milestone:** Complete. Hosts can configure starting chips, blinds, turn time, 2–6 total seats, and no/one/three rebuys per player. Rules lock at creation and persist across refreshes and hands; all guests see the agreed settings. Human rebuys are voluntary between hands; bots follow the same allowance. All 25 browser scenarios pass in Chromium and Firefox, three published scenarios pass, and settings/ledger fixtures plus old-client upgrade replay pass. See the [Hold’em contract](docs/poker-contract.md) and [release report](docs/release-report.md).
 
 ### Milestone 8.4 — More poker modes
 

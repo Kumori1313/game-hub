@@ -2,14 +2,14 @@
 
 ## Scope and clients
 
-The hub owns the catalog and backend migrations. Tic-tac-toe and the poker lobby preview use `room_action` and the same guest identity on the trusted `kumori1313.github.io` origin. The game ID is supplied explicitly and verified against the room. A single guest has one room membership across the platform. Different-origin integration remains milestone 8.5.
+The hub owns the catalog and backend migrations. Tic-tac-toe and poker use `room_action` and the same guest identity on the trusted `kumori1313.github.io` origin. The game ID is supplied explicitly and verified against the room. A single guest has one room membership across the platform. Different-origin integration remains milestone 8.5.
 
 | Game | Seats | Start behavior |
 | --- | --- | --- |
 | `tic-tac-toe` | Exactly two | Host starts; the server randomly assigns X once and X goes first. |
-| `poker` | Host chooses 2–6 | Lobby preview only; the server rejects start. Hands/betting arrive in 8.2. |
+| `poker` | Host chooses 2–6 | No-Limit Hold’em, mixed bot/human seats, and locked table settings. |
 
-The authenticated catalog publishes stable IDs, names, minimum/maximum players, launch paths, contract version, and whether gameplay is available. Catalog settings are maintained by trusted migrations, not clients. Room capacity and public/private visibility are fixed at creation. Poker chip/blind/mode settings remain milestone 8.3.
+The authenticated catalog publishes stable IDs, names, minimum/maximum players, launch paths, contract version, and whether gameplay is available. Catalog settings are maintained by trusted migrations, not clients. Room capacity and public/private visibility are fixed at creation. Poker chip/blind/timer/rebuy settings lock at room creation; additional poker modes remain milestone 8.4.
 
 ## Room API and authorization
 
@@ -54,4 +54,4 @@ Build all three sites before browser-only checks. Integration scripts target loc
 
 ## Poker gameplay (8.2)
 
-Started poker rooms use `poker_action` with a hand UUID and revision. Authorized room snapshots include a caller-specific `poker` view; `match` remains reserved for tic-tac-toe. Private deck/players/history tables are never exposed to clients or Realtime. Shared connection leases and room admission still apply; poker departures transfer ownership instead of aborting the table. See the [Hold’em contract](poker-contract.md) for rules, payouts, deadlines, and recovery.
+Started poker rooms use `poker_table_action` with a hand UUID and revision; `poker_action` remains available for default-rule legacy clients. Authorized room snapshots include a caller-specific `poker` view; `match` remains reserved for tic-tac-toe. Private deck/players/history tables are never exposed to clients or Realtime. Shared connection leases and room admission still apply; poker departures transfer ownership instead of aborting the table. See the [Hold’em contract](poker-contract.md) for rules, payouts, deadlines, and recovery.

@@ -18,7 +18,8 @@
     "test:rooms": "node --env-file=.env.local scripts/test-rooms.mjs",
     "test:upgrade": "node scripts/test-room-upgrade.mjs",
     "test:poker": "node --env-file=.env.local scripts/test-poker.mjs",
-    "test:bots": "node --env-file=.env.local scripts/test-bots.mjs"
+    "test:bots": "node --env-file=.env.local scripts/test-bots.mjs",
+    "test:settings": "node --env-file=.env.local scripts/test-settings.mjs"
   },
   "repository": {
     "type": "git",

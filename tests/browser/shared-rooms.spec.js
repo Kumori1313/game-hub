@@ -106,7 +106,7 @@ test('poker lobby shares hub identity and enforces a six-seat table without star
   await expect(guests[5].locator(`[data-lobby-id="${id}"]`)).toContainText('6/6');
   await expect(guests[5].locator(`[data-lobby-id="${id}"]`).getByRole('button',{name:'Full',exact:true})).toBeDisabled();
   await expect(host.getByRole('button',{name:'Start game',exact:true})).toBeEnabled();
-  await expect(host.locator('#room-message')).toHaveText('1,000 play chips · 10/20 blinds · 30-second turns');
+  await expect(host.locator('#room-message')).toHaveText('1,000 play chips · 10/20 blinds · 30-second turns · No rebuys · Rules locked');
   await host.setViewportSize({width:320,height:740});
   expect(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await host.screenshot({path:'/tmp/game-hub-poker-lobby.png',fullPage:true});

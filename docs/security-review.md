@@ -75,3 +75,9 @@ The engine is deployed before the new client; a separate catalog migration enabl
 Bot IDs do not create Auth accounts. A private RLS registry reserves seats under the room lock; start copies them into the chip ledger with `is_bot=true`. A generated `human_user_id` preserves foreign-key validation for existing and new real players. Only a live-session host may manage bot seats, and only before starting. Human joins and bot additions allocate from the same combined seat set.
 
 The bot strategy receives only its own cards, dealt board, and public betting/chip data. Its private executor shares `poker_apply` with human actions, preserving turn, raise, and accounting checks. Guest roles cannot execute either helper or act as a bot through the public action endpoint. Ownership never transfers to a bot, and no bot-only room continues after the last human leaves. Deployment adds no external AI integration or paid runtime.
+
+## Configured poker and rebuys (8.3)
+
+Settings creation accepts only known integer fields and fixed ranges, reuses the existing admission/creation rules, and commits the settings and room together. Rules lock at creation and have no browser update grant or edit endpoint. Existing rooms receive default rules without changing their cards, chips, or deadlines.
+
+Rebuys require an empty stack between hands, an unused configured allowance, current membership/session, and the exact hand/revision. The amount is server-selected from the original starting stack. A private issuance ledger and updated supply invariant account for every rebuy, including bots; duplicate requests serialize and cannot mint twice. The maximum supply is bounded at 240,000 play chips. Private settings/ledger/helpers have no guest grants. Old action clients may continue default games and receive a refresh prompt for custom rules.

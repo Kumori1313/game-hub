@@ -88,6 +88,8 @@ The hub’s [shared room contract](https://github.com/Kumori1313/game-hub/blob/m
 
 ## Poker (milestone 8.2)
 
-Play-money No-Limit Hold’em supports 2–6 players, private hole cards, server-authoritative bets and payouts, and successive hands in the same room. Defaults are 1,000 chips each, 10/20 blinds, and a 30-second turn clock. Table settings follow in 8.3. See the [Hold’em contract](docs/poker-contract.md). Run `npm run test:poker` against local Supabase for rule, privacy, and chip-accounting fixtures.
+Play-money No-Limit Hold’em supports 2–6 players, private hole cards, server-authoritative bets and payouts, and successive hands in the same room. Defaults are 1,000 chips each, 10/20 blinds, and a 30-second turn clock. Hosts can configure chips, blinds, turn time, seat limit, and bounded rebuys before creating a lobby. Rules lock for that room. See the [Hold’em contract](docs/poker-contract.md). Run `npm run test:poker` against local Supabase for rule, privacy, and chip-accounting fixtures.
 
 Hosts can add or remove bots before starting a poker table. Bots and humans share the same seat limit, so solo play and mixed tables both work. Bots use a basic server-side strategy and are labeled in the lobby and game. Run `npm run test:bots` for local integration coverage; see [bot rules and behavior](docs/poker-contract.md#bots-and-mixed-tables).
+
+Run `npm run test:settings` locally for configurable poker and rebuy coverage. All players see the agreed settings before play; valid hosting preferences are saved in the browser.

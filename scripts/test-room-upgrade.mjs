@@ -39,5 +39,18 @@ try {
  if (select street from game_private.poker_tables where lobby_id='${pokerRoom}')<>'complete' then raise exception 'Active poker hand did not survive upgrade';end if;
  if has_function_privilege('authenticated','game_private.poker_apply(uuid,uuid,text,bigint)','execute') then raise exception 'Private action helper exposed';end if;
  end$$;`);
- console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em and bot upgrades.');
+ const settingsMigration=readdirSync('supabase/migrations').find(name=>name.endsWith('_poker_table_settings.sql'));
+ const restore=`update game_private.poker_players set stack=1000,committed=0,street_bet=0 where lobby_id='${pokerRoom}';update game_private.lobbies set status='playing',closed_at=null where id='${pokerRoom}';select game_private.poker_new_hand('${pokerRoom}');`;
+ const checks83=`begin;
+ do $$begin if (select count(*) from game_private.poker_settings where lobby_id='${pokerRoom}' and starting_chips=1000 and big_blind=20 and turn_seconds=30 and rebuy_limit=0)<>1 then raise exception 'Old room defaults not backfilled';end if;end$$;
+ select set_config('test.hand',(select hand_id::text from game_private.poker_tables where lobby_id='${pokerRoom}'),true);
+ select set_config('request.jwt.claims',(select jsonb_build_object('sub',p.user_id,'session_id',p.user_id)::text from game_private.poker_players p join game_private.poker_tables t using(lobby_id) where p.lobby_id='${pokerRoom}' and p.seat=t.turn_seat),true);
+ set local role authenticated;
+ select public.poker_action('${pokerRoom}','fold',current_setting('test.hand')::uuid,0);
+ reset role;
+ do $$begin if (select street from game_private.poker_tables where lobby_id='${pokerRoom}')<>'complete' then raise exception 'Legacy action did not survive settings upgrade';end if;
+ if has_table_privilege('authenticated','game_private.poker_settings','update') then raise exception 'Rules are editable by guests';end if;end$$;
+ select game_private.poker_assert('${pokerRoom}');commit;`;
+ run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,restore+readFileSync(`supabase/migrations/${settingsMigration}`,'utf8')+checks83);
+ console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em, bot, and settings upgrades.');
 } finally { run(`dropdb -U postgres ${database}`); }

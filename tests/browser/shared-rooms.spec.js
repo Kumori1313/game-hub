@@ -61,6 +61,9 @@ test('private tic-tac-toe requires a code and rematches preserve the room while 
   await expect.poll(()=>Boolean(held),{timeout:10000}).toBe(true);
   await x.getByRole('button',{name:'Rematch',exact:true}).click();
   await o.getByRole('button',{name:'Rematch',exact:true}).click();
+  // Obtain fresh state through recovery while the old snapshot stays held;
+  // do not depend on where the 15-second heartbeat falls in this test.
+  await host.evaluate(()=>dispatchEvent(new Event('online')));
   await expect(o.locator('#room-message')).toHaveText('Your turn (X).',{timeout:10000});
   await expect(x.locator('#room-message')).toHaveText('Waiting for X.',{timeout:10000});
   await held.route.fulfill({response:held.response});held=null;await host.unroute('**/rpc/room_action',hold);

@@ -81,3 +81,7 @@ Full-page screenshots cover both sites in light/dark at 1440px and 320px. Guest 
 ## Interface copy
 
 Keep the interface focused on entering a name, selecting a game, and playing. Use short, literal titles and action labels. Do not add slogans, promotional paragraphs, numbered onboarding summaries, or captions that explain an obvious control or illustration. Keep name constraints, actionable errors, and unavailable-feature notices where needed. Place secondary information, such as guest-identity persistence, in a collapsed disclosure. Banners retain their artwork but use compact page titles so they do not push controls below the first screen.
+
+## Navigation while scrolling
+
+The header stays visible at the top while browsing the hub and game lobbies. Scroll padding keeps anchor targets clear of it. During active game play, `body.match-playing` returns the game header to normal page flow so it scrolls away with the page. Sticky navigation resumes when the match finishes, is interrupted, or the player leaves. The match layout itself remains independent of this navigation state.

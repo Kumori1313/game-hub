@@ -108,16 +108,52 @@ Security is part of the first playable release, not an optional later addition.
 
 ## Phase 8 — Expand the platform
 
-- [ ] Add an in-room rematch after a completed game, requiring both players to accept and retaining their seats.
-- [ ] Decouple the host role from going first: randomly assign X initially and swap X/O on rematches. Preserve host authorization independently of marks.
-- [ ] Add private/code-only lobbies alongside public rooms. Keep private rooms out of discovery and require backend-validated code entry; a room URL alone must not grant access.
-- [ ] Add another game using the same guest and lobby conventions; document the shared data contract and link format first.
-- [ ] Extract shared code only after patterns are clear. Version shared contracts so a game update does not silently break the hub.
-- [ ] Consider invite links or codes, rematches, host transfer, spectator mode, and configurable lobby settings based on feedback.
-- [ ] Revisit architecture for faster real-time games, private game state, stronger anti-cheat, moderation, and scaling. These may require trusted server logic or a dedicated game server.
-- [ ] Review cost and usage as player counts and update frequency grow.
+### Milestone 8.1 — Shared lobbies and repeat play
 
-**Milestone:** A second game can join the platform without redesigning the core guest and lobby flow.
+- [ ] Define and version the shared catalog, identity, seat, lobby, and round contract before adding a second game.
+- [ ] Add public and code-only rooms with backend-validated entry; keep private rooms out of discovery.
+- [ ] Support game-specific player limits and host-selected capacity. Keep tic-tac-toe at two seats and verify poker lobby capacity from two to six.
+- [ ] Keep completed players in the room and require both to accept a tic-tac-toe rematch. Reject stale requests from previous rounds.
+- [ ] Randomly assign X for the first game and swap marks on rematches; host permissions remain independent of marks.
+- [ ] Publish a poker lobby preview in its own repository, with shared guest identity and no playable-poker claim.
+- [ ] Verify private entry, competing joins, full rooms, consent, reconnects, and cross-game isolation locally and on the published sites within the $0/month constraint.
+
+**Milestone:** Public/private rooms, larger poker waiting rooms, and repeated tic-tac-toe matches work without rebuilding the room. Poker dealing and betting remain 8.2.
+
+### Milestone 8.2 — One complete poker variant
+
+- [ ] Implement play-money No-Limit Texas Hold’em for two to six players in the poker repository.
+- [ ] Keep the deck and other players’ hole cards on the trusted backend; return only each player’s authorized view.
+- [ ] Implement secure shuffling/dealing, rotating dealer/blinds, legal betting/raises/folds, all-ins, side pots, split pots, and correct payouts.
+- [ ] Continue through multiple hands in the same table. Define trusted turn deadlines, disconnect/rejoin behavior, departures, and table ownership.
+- [ ] Test rule fixtures, chip conservation, concurrent/stale actions, hidden-card isolation, and complete multi-player hands before publishing gameplay.
+
+**Milestone:** A table can complete successive Hold’em hands with correct private views and chip accounting.
+
+### Milestone 8.3 — Configurable poker tables
+
+- [ ] Add bounded host settings for starting chips, blinds, turn timer, player limit, and rebuy policy. Show the agreed settings to players before play.
+- [ ] Lock or explicitly agree setting changes between hands; never rewrite an active hand’s rules.
+- [ ] Verify settings validation, defaults, mobile controls, reconnects, and saved table configuration.
+
+**Milestone:** Guests can create a configurable, reliable play-money Hold’em table.
+
+### Milestone 8.4 — More poker modes
+
+- [ ] Add tournament play with increasing blinds, elimination, and a clear completion policy.
+- [ ] Select further poker variants after feedback; define and test each variant’s rules separately.
+
+**Milestone:** Additional modes reuse the table platform without compromising the original mode.
+
+### Milestone 8.5 — Platform and ecosystem expansion
+
+- [ ] Support games maintained by other users or organizations; distinguish external links from shared platform integration.
+- [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.
+- [ ] Extract shared code after the lobby contract is verified. Define supported client versions, migrations, and compatibility errors.
+- [ ] Revisit host transfer, spectator mode, moderation, private game state, stronger anti-cheat, and scaling based on feedback.
+- [ ] Review costs, usage, CAPTCHA, and upstream dependency fixes before wider promotion; keep paid changes outside the existing $0/month authorization.
+
+**Milestone:** Additional games can integrate through a documented, tested contract and appropriate trust boundaries.
 
 ## Suggested first steps
 

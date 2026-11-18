@@ -104,10 +104,13 @@ Security is part of the first playable release, not an optional later addition.
 - [ ] Invite a small group to try the game, record problems and feedback, and fix the highest-impact issues.
 - [x] Document deployment, rollback, troubleshooting, and the data/cleanup policy in the repositories.
 
-**Milestone:** Automated release verification passed: 17 scenarios in each of Chromium and Firefox locally, four published release/gameplay scenarios, backend checks, and production settings/cleanup review. The owner confirms two-browser self-play and full-room rejection. Phase 7 remains open for a small-group trial on separate devices and recorded feedback. See the [release report](docs/release-report.md), [runbook](docs/release-runbook.md), and [playtest guide](docs/playtest-guide.md).
+**Milestone:** Automated release verification passed: 17 scenarios in each of Chromium and Firefox locally, four published release/gameplay scenarios, backend checks, and production settings/cleanup review. The owner confirms two-browser self-play, full-room rejection, and successful laptop/mobile play. External feedback is recorded and prioritized for Phase 8; separate-person playtest details remain unconfirmed. See the [release report](docs/release-report.md), [runbook](docs/release-runbook.md), and [playtest guide](docs/playtest-guide.md).
 
 ## Phase 8 — Expand the platform
 
+- [ ] Add an in-room rematch after a completed game, requiring both players to accept and retaining their seats.
+- [ ] Decouple the host role from going first: randomly assign X initially and swap X/O on rematches. Preserve host authorization independently of marks.
+- [ ] Add private/code-only lobbies alongside public rooms. Keep private rooms out of discovery and require backend-validated code entry; a room URL alone must not grant access.
 - [ ] Add another game using the same guest and lobby conventions; document the shared data contract and link format first.
 - [ ] Extract shared code only after patterns are clear. Version shared contracts so a game update does not silently break the hub.
 - [ ] Consider invite links or codes, rematches, host transfer, spectator mode, and configurable lobby settings based on feedback.

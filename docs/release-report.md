@@ -50,4 +50,16 @@ No gameplay failure was reported in the laptop/mobile test. External feedback id
 | Playing again requires rebuilding the room | One match per lobby; both players leave and join a new room. | Offer a rematch after a completed game, keep both players in the room, and require both to accept. |
 | No code-only rooms | All waiting rooms appear in public discovery. | Add a private/code-only option while retaining public lobbies. Exclude private rooms from public discovery and validate the code on the backend. |
 
-These are planned Phase 8 enhancements, not changes already shipped. Prioritize this round of playtest refinements before adding another game. Host permissions should remain separate from move order; private-room access must not depend only on hiding a link in the interface.
+These requests were implemented in milestone 8.1, as recorded below. Poker gameplay remains a later milestone. Host permissions should remain separate from move order; private-room access must not depend only on hiding a link in the interface.
+
+## Milestone 8.1 completion
+
+- Hub client/migration: `88a0f48`; tic-tac-toe: `142d753`; poker lobby preview: `1743e69`.
+- All 19 browser scenarios pass locally in Chromium and Firefox, including private admission, retained rematch rooms, swapped marks, stale-round replies, and six-seat rooms.
+- Four focused published scenarios pass across all three sites, covering complete tic-tac-toe games/recovery, private entry/rematches, and the poker preview with a seventh guest kept outside a full room.
+- Unit checks and builds pass in all three repositories. Existing lobby/security/rule suites, new shared-room integration checks, API surface checks, and isolated legacy-data migration replay pass.
+- Firefox testing exposed a discovery-refresh interaction that could replace a Join control between pointer-down/up. Both clients now preserve controls during updates, and the explicit mid-click-refresh regression passes in both engines and live.
+- Migration `20261118030904` is applied. Hosted checks confirm no missing seats, RLS on every application table, private vote/helper access denied, and poker capacity six with gameplay disabled. Advisor notices remain the documented intentional guest-access/private-table/password notices; production has zero outstanding declared configuration changes.
+- All three Pages deployments succeeded. No paid resource, project, or plan upgrade was added. The open development-tool advisory and wider-release CAPTCHA decision remain documented.
+
+Poker is a lobby preview at https://kumori1313.github.io/poker/. Dealing, private cards, betting, payouts, and successive hands begin in milestone 8.2; chip/blind/table controls follow in 8.3. The poker repository initially contained its MIT license, which was retained.

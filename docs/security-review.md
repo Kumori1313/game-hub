@@ -59,3 +59,7 @@ Both repositories pass unit checks and production builds. The local lobby and se
 ## Dependency follow-up (Phase 6)
 
 A later audit reports [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) in development-only picomatch and its Vite dependency chain. The advisory currently lists no patched version. The published static game does not include this build dependency or accept user-supplied glob patterns. Keep the development server on loopback, use trusted build inputs, and review upstream fixes before the Phase 7 release. The earlier zero-vulnerability audit is a historical result, not the current audit status.
+
+## Milestone 8.1 extension
+
+The [version 2 room contract](shared-room-contract.md) adds code-only rooms and private rematch votes without client table grants. Invalid code replies commit request-budget usage. Match-bound moves and round-aware snapshots reject stale actions across rematches; host privileges are independent of randomly assigned marks. The migration preserves first-round legacy clients and was replayed against existing-room fixtures before production deployment. Poker has no dealing or hidden-card state yet; start is rejected by the backend.

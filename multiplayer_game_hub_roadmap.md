@@ -110,15 +110,15 @@ Security is part of the first playable release, not an optional later addition.
 
 ### Milestone 8.1 — Shared lobbies and repeat play
 
-- [ ] Define and version the shared catalog, identity, seat, lobby, and round contract before adding a second game.
-- [ ] Add public and code-only rooms with backend-validated entry; keep private rooms out of discovery.
-- [ ] Support game-specific player limits and host-selected capacity. Keep tic-tac-toe at two seats and verify poker lobby capacity from two to six.
-- [ ] Keep completed players in the room and require both to accept a tic-tac-toe rematch. Reject stale requests from previous rounds.
-- [ ] Randomly assign X for the first game and swap marks on rematches; host permissions remain independent of marks.
-- [ ] Publish a poker lobby preview in its own repository, with shared guest identity and no playable-poker claim.
-- [ ] Verify private entry, competing joins, full rooms, consent, reconnects, and cross-game isolation locally and on the published sites within the $0/month constraint.
+- [x] Define and version the shared catalog, identity, seat, lobby, and round contract before adding a second game.
+- [x] Add public and code-only rooms with backend-validated entry; keep private rooms out of discovery.
+- [x] Support game-specific player limits and host-selected capacity. Keep tic-tac-toe at two seats and verify poker lobby capacity from two to six.
+- [x] Keep completed players in the room and require both to accept a tic-tac-toe rematch. Reject stale requests from previous rounds.
+- [x] Randomly assign X for the first game and swap marks on rematches; host permissions remain independent of marks.
+- [x] Publish a poker lobby preview in its own repository, with shared guest identity and no playable-poker claim.
+- [x] Verify private entry, competing joins, full rooms, consent, reconnects, and cross-game isolation locally and on the published sites within the $0/month constraint.
 
-**Milestone:** Public/private rooms, larger poker waiting rooms, and repeated tic-tac-toe matches work without rebuilding the room. Poker dealing and betting remain 8.2.
+**Milestone:** Complete. Public/code-only rooms, configurable 2–6-seat poker waiting rooms, randomized initial tic-tac-toe marks, and consent-based rematches are deployed. All 19 local browser scenarios pass in each of Chromium and Firefox; four focused published scenarios pass. Backend rules/concurrency and legacy-data upgrade replay pass. See the [shared room contract](docs/shared-room-contract.md) and [release report](docs/release-report.md). Poker dealing and betting remain 8.2.
 
 ### Milestone 8.2 — One complete poker variant
 

@@ -78,7 +78,7 @@ See the [Phase 5 review](docs/security-review.md) for authorization boundaries, 
 
 ## Release verification
 
-Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe npm run test:release` with local Supabase to check both repositories and the full flow. Set `E2E_BROWSER=firefox` for a second browser engine. See the [release runbook](docs/release-runbook.md), [verification report](docs/release-report.md), and [small-group playtest guide](docs/playtest-guide.md).
+Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe POKER_SITE_DIR=/absolute/path/to/poker npm run test:release` with local Supabase to check both repositories and the full flow. Set `E2E_BROWSER=firefox` for a second browser engine. See the [release runbook](docs/release-runbook.md), [verification report](docs/release-report.md), and [small-group playtest guide](docs/playtest-guide.md).
 
 ## Shared rooms (milestone 8.1)
 

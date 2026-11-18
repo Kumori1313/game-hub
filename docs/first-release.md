@@ -100,3 +100,7 @@ All screens need loading, empty, and actionable error states where applicable. C
 - [x] The complete flow works using a keyboard and on a narrow mobile viewport.
 
 Phase 6 verifies these checks with local server tests and independent browser sessions, including published GitHub Pages paths. Draw and O-win games use Enter/Space for every move. Physical-device checks, broader accessibility review, and small-group feedback remain Phase 7. See the [gameplay contract](gameplay-contract.md).
+
+## Later platform changes
+
+This document preserves the original first-release decisions. Milestone 8.1 supersedes host-as-X and one-match-only rooms with randomized initial marks, mark-swapping rematches, and code-only room options. See the [current shared room contract](shared-room-contract.md).

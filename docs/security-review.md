@@ -69,3 +69,9 @@ The [version 2 room contract](shared-room-contract.md) adds code-only rooms and 
 Poker cards, deck order, chip commitments, and hand history live in three private RLS-enabled tables without browser grants. A session-validated internal definer implements the public invoker RPC; helpers are not executable by guest roles. Room locks, exact hand/revision checks, bounded integer bets, and chip conservation protect mutations. Snapshots expose only the caller's hole cards before showdown, then nonfolded showdown hands; folded cards and future community cards remain private. Presence never transports cards or game state.
 
 The engine is deployed before the new client; a separate catalog migration enables new hands afterward. Disabling that flag stops new starts/deals while allowing active hands to finish. The old room-start endpoint cannot launch unsupported poker gameplay. Local fixtures cover unauthorized actors/grants, concurrent/stale moves, and card isolation. No payment, withdrawal, or real-money features are implemented.
+
+## Bot seats
+
+Bot IDs do not create Auth accounts. A private RLS registry reserves seats under the room lock; start copies them into the chip ledger with `is_bot=true`. A generated `human_user_id` preserves foreign-key validation for existing and new real players. Only a live-session host may manage bot seats, and only before starting. Human joins and bot additions allocate from the same combined seat set.
+
+The bot strategy receives only its own cards, dealt board, and public betting/chip data. Its private executor shares `poker_apply` with human actions, preserving turn, raise, and accounting checks. Guest roles cannot execute either helper or act as a bot through the public action endpoint. Ownership never transfers to a bot, and no bot-only room continues after the last human leaves. Deployment adds no external AI integration or paid runtime.

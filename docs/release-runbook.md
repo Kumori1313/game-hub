@@ -73,3 +73,5 @@ GAME_SITE_DIR=/path/to/tic-tac-toe POKER_SITE_DIR=/path/to/poker E2E_BROWSER=fir
 ```
 
 The focused published poker suite completes a heads-up hand, starts another, and tests a three-player host departure. Do not run the local fixture scripts against production. See the [Hold’em contract](poker-contract.md) for fixed rules and privacy guarantees.
+
+Bot support is a compatible extension to the enabled Hold’em engine: deploy its schema migration before the new lobby controls. Existing human-only tables retain their cards, chips, and turns. Run `npm run test:bots` locally and the two focused `tests/browser/bots.spec.js` scenarios against the published site. Do not run local deadline/fixture mutations against the hosted database.

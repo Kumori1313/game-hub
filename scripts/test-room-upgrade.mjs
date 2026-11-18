@@ -24,5 +24,20 @@ try {
  }
  const checks="\n do $$begin\n if (select count(*) from game_private.memberships where seat in (1,2))<>6 then raise exception 'Legacy seats were not preserved'; end if;\n if (select count(*) from public.game_catalog where id='poker' and capacity=6 and not playable)<>1 then raise exception 'Poker catalog entry missing'; end if;\n if has_table_privilege('authenticated','game_private.rematch_votes','select') then raise exception 'Private votes readable'; end if;\n if has_function_privilege('anon','public.room_action(text,uuid,uuid,text,integer,text,text,integer)','execute') then raise exception 'Unauthenticated RPC grant'; end if;\n end$$;\n select set_config('request.jwt.claims','{\"sub\":\"00000000-0000-0000-0000-000000000003\",\"session_id\":\"00000000-0000-0000-0000-000000000003\"}',true);\n set local role authenticated;\n select public.play_move('10000000-0000-0000-0000-000000000002',0,0);\n reset role;\n do $$begin\n if (select revision from game_private.matches where lobby_id='10000000-0000-0000-0000-000000000002')<>1 then raise exception 'Legacy match could not continue'; end if;\n end$$;\n ";
  run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,'begin;\n'+bootstrap+baseline+fixtures+readFileSync(`supabase/migrations/${migration}`,'utf8')+readFileSync('supabase/migrations/20261118222942_holdem_engine.sql','utf8').replace(/^BEGIN;$/gm,'').replace(/^COMMIT;$/gm,'')+checks+'\ncommit;'+readFileSync('supabase/migrations/20261118223537_enable_holdem.sql','utf8')+"do $$begin if not (select playable from public.game_catalog where id='poker') then raise exception 'Poker activation missing';end if;end$$;");
- console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em upgrade.');
+ const pokerRoom='20000000-0000-0000-0000-000000000001';
+ let pokerFixture='';
+ for(let i=7;i<=8;i++)pokerFixture+=`insert into auth.users values('${user(i)}','{"display_name":"Legacy poker"}',null,null); insert into auth.sessions values('${user(i)}','${user(i)}',null);`;
+ pokerFixture+=`insert into game_private.lobbies(id,game_id,host_id,status,capacity) values('${pokerRoom}','poker','${user(7)}','waiting',2);`;
+ for(let i=7;i<=8;i++)pokerFixture+=`insert into game_private.memberships(lobby_id,user_id,display_name,seat) values('${pokerRoom}','${user(i)}','Legacy poker',${i-6});insert into game_private.connections values('${pokerRoom}','${user(i)}','${user(i)}',now()+interval '5 minutes');`;
+ pokerFixture+=`select game_private.poker_start('${pokerRoom}');`;
+ const botMigration=readdirSync('supabase/migrations').find(name=>name.endsWith('_poker_bots.sql'));
+ run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,pokerFixture+readFileSync(`supabase/migrations/${botMigration}`,'utf8')+`do $$declare actor uuid;begin
+ if (select count(*) from game_private.poker_players where lobby_id='${pokerRoom}' and not is_bot and human_user_id=user_id)<>2 then raise exception 'Human foreign keys not preserved';end if;
+ select p.user_id into actor from game_private.poker_players p join game_private.poker_tables t using(lobby_id) where p.lobby_id='${pokerRoom}' and p.seat=t.turn_seat;
+ perform game_private.poker_apply('${pokerRoom}',actor,'fold');
+ perform game_private.poker_assert('${pokerRoom}');
+ if (select street from game_private.poker_tables where lobby_id='${pokerRoom}')<>'complete' then raise exception 'Active poker hand did not survive upgrade';end if;
+ if has_function_privilege('authenticated','game_private.poker_apply(uuid,uuid,text,bigint)','execute') then raise exception 'Private action helper exposed';end if;
+ end$$;`);
+ console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em and bot upgrades.');
 } finally { run(`dropdb -U postgres ${database}`); }

@@ -28,6 +28,7 @@ run(hub,'test:lobbies');
 run(hub,'test:security');
 run(hub,'test:rooms');
 run(hub,'test:poker');
+run(hub,'test:bots');
 run(hub,'test:upgrade');
 run(hub,'test:e2e');
 console.log('Local release checks passed. Record the browser engine and exact commits in the release report.');

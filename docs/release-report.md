@@ -63,3 +63,16 @@ These requests were implemented in milestone 8.1, as recorded below. Poker gamep
 - All three Pages deployments succeeded. No paid resource, project, or plan upgrade was added. The open development-tool advisory and wider-release CAPTCHA decision remain documented.
 
 Poker is a lobby preview at https://kumori1313.github.io/poker/. Dealing, private cards, betting, payouts, and successive hands begin in milestone 8.2; chip/blind/table controls follow in 8.3. The poker repository initially contained its MIT license, which was retained.
+
+## Milestone 8.2 completion
+
+Play-money No-Limit Texas Hold’em is live at https://kumori1313.github.io/poker/. Fixed defaults are 1,000 chips per player, 10/20 blinds, and a 30-second turn clock. Configurable tables remain milestone 8.3. See the [Hold’em contract](poker-contract.md).
+
+- Implementation commits: hub `267787f`, poker `364d0b0`, tic-tac-toe shared client `908fc26`; staged activation and upgrade checks `e1bce61`.
+- All 21 browser scenarios pass locally in Chromium (1.6 minutes) and Firefox (1.8 minutes). New scenarios complete a showdown, refresh private cards, deal a successive hand, fold without exposing future cards, and continue a three-player table after host departure. Narrow-screen light mode and keyboard controls pass.
+- Three focused published Chromium scenarios pass (1.1 minutes): complete tic-tac-toe games/recovery, successive heads-up Hold’em hands, and three-player betting/recovery/host transfer. These checks used independent anonymous browser sessions; they do not establish physical-device or Safari behavior.
+- Eight unit checks and production builds pass in each repository. Lobby/security/shared-room suites, the local API surface check, poker rule/accounting fixtures, and isolated legacy-data upgrade replay pass. The replay preserves active tic-tac-toe gameplay and verifies disabled-before/enabled-after poker activation.
+- Poker fixtures cover every hand category and kickers, wheel straights, unequal all-ins and side pots, split/odd chips, unmatched returns, heads-up button/blind rotation, short and cumulative all-ins, six-way all-ins with unique cards, chip conservation, concurrent/stale requests, unauthorized/private-card access, idempotent host-only starts, trusted timeouts, leases, and departed all-in eligibility.
+- Hosted migrations `20261118222942` and `20261118223537` are applied and history matches local files. The engine deployed with the catalog disabled; activation followed successful deployment of all three compatible clients. Hosted checks confirm three new RLS tables, no guest card-table/helper access, and no unauthenticated action grant.
+- Hosted advisors report the existing intentional guest-access/password notices and private tables without policies; the latter deny direct browser access. Performance findings are informational unused indexes. The local image reports its unused Vault extension version notice. No new declared production configuration differences exist. The previously documented development-tool advisory remains open.
+- GitHub Pages deployments succeeded. Existing Supabase Free resources were retained; no paid project, branch, plan, or service was added.

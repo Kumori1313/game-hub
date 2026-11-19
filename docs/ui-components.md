@@ -1,5 +1,7 @@
 # Visual System and Component Guide
 
+This guide describes the hub and its matching first-party interfaces. Other games may use their own visual design; follow the [game development guide](game-development-guide.md) for routing, identity, and platform integration.
+
 ## Identity and layout
 
 Game Hub uses an original board-and-path emblem and `public/art/playfield.svg`, an original SVG illustration created for this project. Both repositories own matching copies. The same artwork is cropped in the navigation strip and enlarged beside a short page title. No reference-site artwork, logos, fonts, or scripts are shipped. `UI-Ideas/` remains a local, ignored research folder.

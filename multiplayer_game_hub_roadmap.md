@@ -139,15 +139,13 @@ Security is part of the first playable release, not an optional later addition.
 
 **Milestone:** Complete. Hosts can configure starting chips, blinds, turn time, 2–6 total seats, and no/one/three rebuys per player. Rules lock at creation and persist across refreshes and hands; all guests see the agreed settings. Human rebuys are voluntary between hands; bots follow the same allowance. All 25 browser scenarios pass in Chromium and Firefox, three published scenarios pass, and settings/ledger fixtures plus old-client upgrade replay pass. See the [Hold’em contract](docs/poker-contract.md) and [release report](docs/release-report.md).
 
-### Milestone 8.4 — More poker modes
+### Milestone 8.4 — Platform and ecosystem expansion
 
-- [ ] Add tournament play with increasing blinds, elimination, and a clear completion policy.
-- [ ] Select further poker variants after feedback; define and test each variant’s rules separately.
+Platform expansion and additional games are the next priority. Further poker variants are outside the current roadmap and can be requested separately.
 
-**Milestone:** Additional modes reuse the table platform without compromising the original mode.
-
-### Milestone 8.5 — Platform and ecosystem expansion
-
+- [x] Publish a [game development guide](docs/game-development-guide.md) covering independent UI, existing routes, shared identity, backend integration, and verification.
+- [ ] Generalize catalog navigation and game-specific room dispatch so new games can integrate through explicit adapters.
+- [ ] Add and verify another game using the development guide, including guest entry, admission, complete gameplay, recovery, and return to the hub.
 - [ ] Support games maintained by other users or organizations; distinguish external links from shared platform integration.
 - [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.
 - [ ] Extract shared code after the lobby contract is verified. Define supported client versions, migrations, and compatibility errors.

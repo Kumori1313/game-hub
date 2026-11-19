@@ -2,6 +2,10 @@
 
 The discovery hub for small multiplayer games. Tic-tac-toe lives in a separate [repository](https://github.com/Kumori1313/tic-tac-toe). Guest entry is implemented: enter or change a display name, restore your anonymous session, and navigate between the hub and tic-tac-toe. Public lobbies and waiting rooms are implemented in the game site. Two guests can play complete tic-tac-toe matches with synchronized turns and results.
 
+## Develop a compatible game
+
+Start with the [game development guide](docs/game-development-guide.md). It covers independent game repositories, routes and asset paths, shared guest identity, lobby/backend integration, local testing, and deployment. Your game can use its own visual design; matching the hub’s UI is optional.
+
 ## Local development
 
 Requires Node.js 22.12+ and npm. Use Node 22 for parity with CI.
@@ -64,7 +68,7 @@ The shared visual language uses original SVG artwork (`public/art/playfield.svg`
 
 A small inline head script selects the saved theme before paint. If storage is unavailable, dark remains the default and the toggle still works for the current page. `src/theme.js` also synchronizes other tabs. `src/illustration.js` updates the preview only in response to scroll or guest progress and while visible; reduced-motion mode displays a static final board. There is no autonomous animation loop. The playable board lives in the game repository; its decorative preview is hidden during matches.
 
-The hub’s [component guide](https://github.com/Kumori1313/game-hub/blob/main/docs/ui-components.md) documents matching styles, future screen sketches, and verification. Keep shared presentation files aligned across repositories until they are extracted into a package.
+The hub’s [component guide](https://github.com/Kumori1313/game-hub/blob/main/docs/ui-components.md) documents matching styles, future screen sketches, and verification. For the existing matching sites, keep copied presentation files aligned until they are extracted into a package. New games may use their own UI; follow the [game development guide](docs/game-development-guide.md) for platform compatibility.
 
 ## Public lobbies
 

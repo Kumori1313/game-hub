@@ -39,6 +39,21 @@ The original `lobby_action` and `play_move` wrappers remain for version 1 client
 
 Migration `20261118030904` preserves existing rooms, backfills their seats from old marks before enforcing non-null uniqueness, and seeds the poker catalog entry explicitly. A structural replay in an isolated local database verifies waiting/active/finished legacy fixtures and continuation of an old active match. Minimal Auth/Realtime/cron stubs in that replay are complemented by full local Supabase API, RLS, concurrency, and browser tests.
 
+## Backend game adapters
+
+A reviewed migration registers a game in `game_private.dispatch_room_game` and assigns its private adapter. A catalog entry supplies limits and metadata. Registration supplies the game-specific implementation. The shared API checks both before accepting room requests.
+
+| Event | Adapter response |
+| --- | --- |
+| `host_mark`, `guest_mark` | Initial display mark as a JSON string or SQL null. |
+| `reserved_seats` | JSON array of reserved seat numbers, such as bots, or SQL null for none. |
+| `snapshot` | JSON object merged into the shared snapshot. Include only fields the caller may see. |
+| `start` | Start the game and return its expected response, or raise its supported client error. |
+| `rematch`, `cancel_rematch` | Apply the game's restart policy and return a snapshot, or reject the request. |
+| `leave`, `prune` | Return JSON true when the adapter handles the event. Return SQL null to use the shared path. |
+
+The shared API validates the session, membership, game ID, and host start permission before dispatching client actions. It holds the room lock before mutation hooks run. Adapters must respect the configured `playable` flag where applicable and retain stale-round handling. Keep adapter functions private with execute revoked from browser roles. Register through a static SQL branch and keep the game-specific action RPC responsible for its own authorization and locking. The existing tic-tac-toe and poker adapters are examples in the `room_game_adapters` migration.
+
 ## Verification
 
 ```bash

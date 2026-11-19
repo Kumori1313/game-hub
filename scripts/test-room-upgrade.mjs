@@ -52,5 +52,31 @@ try {
  if has_table_privilege('authenticated','game_private.poker_settings','update') then raise exception 'Rules are editable by guests';end if;end$$;
  select game_private.poker_assert('${pokerRoom}');commit;`;
  run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,restore+readFileSync(`supabase/migrations/${settingsMigration}`,'utf8')+checks83);
- console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em, bot, and settings upgrades.');
+ const adapterMigration=readdirSync('supabase/migrations').find(name=>name.endsWith('_room_game_adapters.sql'));
+ const snapshotBefore=`select set_config('request.jwt.claims','{"sub":"${user(7)}","session_id":"${user(7)}"}',false);
+ create temporary table before_room_snapshots as
+ select id, game_private.room_snapshot(id) #- '{poker,server_time}' as snapshot
+ from game_private.lobbies;`;
+ const adapterChecks=`do $$begin
+  if exists(select 1 from before_room_snapshots where snapshot is distinct from (game_private.room_snapshot(id) #- '{poker,server_time}')) then
+   raise exception 'Room adapter changed a legacy snapshot';
+  end if;
+  if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='game_private' and p.proname in ('dispatch_room_game','tic_tac_toe_room_adapter','poker_room_adapter')
+   and (has_function_privilege('authenticated',p.oid,'execute') or has_function_privilege('anon',p.oid,'execute'))) then
+   raise exception 'Room adapter exposed to a client role';
+  end if;
+ end$$;
+ insert into public.game_catalog(id,name,capacity,min_players,playable,contract_version,launch_path)
+ values('fixture-game','Fixture',2,2,true,2,'/fixture-game/');
+ set role authenticated;
+ do $$begin
+  perform public.room_action('current',p_game=>'fixture-game');
+  raise exception 'Catalog-only game admitted without an adapter';
+ exception when invalid_parameter_value then
+  if sqlerrm<>'Unknown game.' then raise; end if;
+ end$$;
+ reset role;`;
+ run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,snapshotBefore+readFileSync(`supabase/migrations/${adapterMigration}`,'utf8')+adapterChecks);
+ console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em, bot, settings, and adapter upgrades.');
 } finally { run(`dropdb -U postgres ${database}`); }

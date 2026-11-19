@@ -18,7 +18,7 @@ The hub launches separate static websites with normal links. It does not embed g
 | Tic-tac-toe | `https://kumori1313.github.io/tic-tac-toe/` |
 | Poker | `https://kumori1313.github.io/poker/` |
 
-The hub renders game links from the reviewed entries in `src/game-catalog.js`. Add an entry there to show a new game in the menu. The database catalog and room dispatch control multiplayer admission separately. Room dispatch currently accepts `tic-tac-toe` and `poker`, so maintainers must extend it for a new game.
+The hub renders game links from the reviewed entries in `src/game-catalog.js`. Add an entry there to show a new game in the menu. The database catalog and room dispatch control multiplayer admission separately. Room dispatch has private adapters for `tic-tac-toe` and `poker`. Register each new game with the backend before enabling its rooms.
 
 A simple external link is another integration level, but it does not grant shared identity or lobbies. A different owner's GitHub Pages site has a different origin. It cannot access the saved hub session just by using the same storage key. Shared integration there requires a separately implemented and reviewed authentication handoff. Never put access tokens, refresh tokens, or room codes in launch URLs.
 
@@ -129,13 +129,13 @@ Different ports are different origins. Separate Vite servers on 5173 and 5176 ar
 
 Before enabling shared lobbies, contribute reviewed migrations and agree on these behaviors:
 
-1. **Registration and admission.** Seed the catalog fields `id`, `name`, `min_players`, `capacity`, `playable`, `contract_version`, and `launch_path`. Extend the current game allowlist and relevant dispatch. Shared room limits currently support 2–6 total seats; other sizes require schema and client work. Admission, capacity, and seat allocation must be atomic. One guest currently has one platform room membership.
+1. **Registration and admission.** Seed the catalog fields `id`, `name`, `min_players`, `capacity`, `playable`, `contract_version`, and `launch_path`. Register the game in `game_private.dispatch_room_game` with a private adapter. Shared room limits currently support 2–6 total seats; other sizes require schema and client work. Admission, capacity, and seat allocation must be atomic. One guest currently has one platform room membership.
 2. **Start and snapshots.** Define host permissions and initialization; include only the caller's authorized game state in guarded room snapshots. The current `match` payload belongs to tic-tac-toe and `poker` to poker. Add an explicit game payload and compatible dispatch rather than treating either as a universal model.
 3. **Actions and synchronization.** Implement trusted action handlers that validate the live session, game, membership, turn, rules, and current match/hand/round ID plus revision. Derive the actor server-side. Keep decks, hidden hands, answers, or other private information off clients that cannot see them. Browser-computed results are not authoritative.
 4. **Recovery and completion.** Define disconnects, departures, ownership, deadlines, results, replay/rematch consent, and cleanup. The existing reference uses 15-second heartbeats, 90-second per-tab leases, guarded polling, and seven-day terminal retention. This suits small turn-based games; propose a reviewed transport/runtime design if your game needs continuous real-time simulation. Private Presence is advisory; it is not the membership or game-state authority.
 5. **Permissions and compatibility.** Keep game tables private with RLS and restricted grants. Expose narrow authenticated RPCs, and update API-exposure checks for reviewed endpoints. Preserve old-client behavior or return a clear refresh/incompatibility response. Add a new migration; never rewrite an applied one.
 
-Inspect the **latest** definitions across migrations: `game_private.room_api`, `room_snapshot`, `prune_lobby`, and `sync_summary` contain shared lifecycle integration. The current implementations have tic-tac-toe/poker branches for starts, snapshots, departures, and cleanup; those need deliberate extension. Poker-only bots, settings, and rebuys are not generic platform APIs.
+Use the [room adapter contract](shared-room-contract.md#backend-game-adapters) to implement game-specific behavior. The shared room functions handle admission, leases, and discovery. The adapter supplies the game-specific lifecycle and authorized view. Implement your own guarded action RPC for moves. Poker bots, settings, and rebuys belong to the poker API.
 
 Handle both Supabase RPC errors and returned `{ error, code }` envelopes; some room denials use an envelope so the request-budget charge commits.
 

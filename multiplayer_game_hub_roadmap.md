@@ -144,7 +144,8 @@ Security is part of the first playable release, not an optional later addition.
 Platform expansion and additional games are the next priority. Further poker variants are outside the current roadmap and can be requested separately.
 
 - [x] Publish a [game development guide](docs/game-development-guide.md) covering independent UI, existing routes, shared identity, backend integration, and verification.
-- [ ] Generalize catalog navigation and game-specific room dispatch so new games can integrate through explicit adapters.
+- [x] Generalize hub navigation so new games can be listed through reviewed entries in `src/game-catalog.js`. Verify the existing development and production routes.
+- [ ] Generalize game-specific room dispatch so new games can integrate through explicit backend adapters.
 - [ ] Add and verify another game using the development guide, including guest entry, admission, complete gameplay, recovery, and return to the hub.
 - [ ] Support games maintained by other users or organizations; distinguish external links from shared platform integration.
 - [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.

@@ -18,7 +18,7 @@ The hub launches separate static websites with normal links. It does not embed g
 | Tic-tac-toe | `https://kumori1313.github.io/tic-tac-toe/` |
 | Poker | `https://kumori1313.github.io/poker/` |
 
-The hub currently renders its game links explicitly in `src/main.js`. Although the database catalog stores launch paths, adding a catalog row alone does not create a menu entry. Backend room dispatch also explicitly accepts `tic-tac-toe` and `poker`. A new slug requires maintainer changes; there is no general-purpose game SDK yet.
+The hub renders game links from the reviewed entries in `src/game-catalog.js`. Add an entry there to show a new game in the menu. The database catalog and room dispatch control multiplayer admission separately. Room dispatch currently accepts `tic-tac-toe` and `poker`, so maintainers must extend it for a new game.
 
 A simple external link is another integration level, but it does not grant shared identity or lobbies. A different owner's GitHub Pages site has a different origin. It cannot access the saved hub session just by using the same storage key. Shared integration there requires a separately implemented and reviewed authentication handoff. Never put access tokens, refresh tokens, or room codes in launch URLs.
 
@@ -145,7 +145,7 @@ Render confirmed snapshots. Ignore older rounds/revisions and late responses fro
 
 A complete integration PR must cover both repositories:
 
-- Add the approved game link in hub `src/main.js`, including a local development URL under its existing `import.meta.env.DEV` branch. Production should point to `/my-game/` on the trusted origin.
+- Add a reviewed entry in `src/game-catalog.js` with the slug, title, link label, display details, unique title and link IDs, and local dev port. For `my-game` on port `5176`, the hub generates `/my-game/` in production and `http://127.0.0.1:5176/my-game/` in development.
 - Add the catalog/backend migration and new-game lifecycle/action tests in the hub. Keep gameplay disabled until its compatible client and reviewed backend are ready.
 - Add a root mapping in `scripts/serve-session-test.mjs`, for example:
 

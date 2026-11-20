@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test('two hub guests play Relay Room, leave, and start a new room', async ({browser,baseURL}) => {
   test.skip(process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room runtime');
-  test.setTimeout(100000);
-  const contexts = await Promise.all([0,1,2].map(() => browser.newContext({viewport:{width:980,height:690}})));
+  test.setTimeout(240000);
+  const contexts = await Promise.all([0,1,2].map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
   const [host,guest,outsider] = await Promise.all(contexts.map(c => c.newPage()));
   async function enter(page,name) {
     await page.goto(baseURL+'/game-hub/');
@@ -14,7 +14,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
   }
   try {
     // Exercise keyboard-only look so synthetic headless pointer warps cannot turn the operator at spawn.
-    await host.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype,'requestPointerLock',{value:undefined}); });
+    for (const page of [host,guest]) await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype,'requestPointerLock',{value:undefined}); });
     await Promise.all([enter(host,'Relay host'),enter(guest,'Relay guest'),enter(outsider,'Bystander')]);
     await host.locator('#hub-visibility').selectOption('private');
     await host.locator('#hub-create').click();
@@ -32,12 +32,14 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
     await guest.reload();
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
+    const states = new Map();
     const plans = new Map([[host,[]],[guest,[]]]);
     for (const [page,received] of plans) {
       page.on('websocket', socket => {
         if (!socket.url().endsWith('/relay-room/live')) return;
         socket.on('framereceived',({payload}) => {
           const message = JSON.parse(String(payload));
+          if (message.type === 'state') states.set(page,message.state);
           if (message.type === 'joined') received.push(message.layout);
         });
       });
@@ -60,6 +62,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#debug').click();
     await host.keyboard.press('e');
     await expect(guest.locator('#stats')).toContainText('P1 · on');
+    const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
     expect(plan.version).toBe(1);
     expect(plans.get(guest)[0]).toEqual(plan);
@@ -79,17 +82,85 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#stats')).toContainText('Open doors  '+entranceDoor);
     await expect(host.locator('#layout-map')).toBeVisible();
     await host.screenshot({path:'/tmp/relay-hub-live.png'});
-    await host.locator('#live-leave').click();
-    await expect(host).toHaveURL(/\/game-hub\//);
+    // Walk the generated aisles with normal controls and operate the paired floor pads.
+    await host.locator('#debug').click();
+    await guest.locator('#debug').click();
+    await host.locator('#enter').click();
+    await guest.locator('#enter').tap();
+    const bays = new Map(plan.rooms.map(r => [r.id,r]));
+    const intake = plan.rooms.find(r => r.kind === 'intake');
+    const relay = bays.get(plan.objectiveId), exit = bays.get(plan.exitId);
+    function path(from,to) {
+      const queue = [[from]];
+      const seen = new Set([from]);
+      for (const chain of queue) {
+        const bay = chain.at(-1);
+        if (bay === to) return chain;
+        for (const edge of plan.passages) {
+          const next = edge.a === bay.id ? bays.get(edge.b) : edge.b === bay.id ? bays.get(edge.a) : null;
+          if (next && !seen.has(next)) { seen.add(next); queue.push([...chain,next]); }
+        }
+      }
+      throw Error('Disconnected facility');
+    }
+    async function walk(page,axis,to) {
+      const coordinate = () => states.get(page).players.find(p => p.id === (page === host ? 1 : 2))[axis];
+      const direction = Math.sign(to-coordinate());
+      if (Math.abs(to-coordinate()) < 0.35) return;
+      const key = axis === 'x' ? (direction > 0 ? 'd' : 'a') : (direction > 0 ? 's' : 'w');
+      await page.keyboard.down(key);
+      try {
+        await expect.poll(async () => {
+          const hint = await page.locator('#action').textContent();
+          if (hint.includes('Open bulkhead')) await page.keyboard.press('r');
+          if (hint.includes('Bulkhead within reach')) await page.locator('#open-door').tap();
+          return direction*(to-coordinate());
+        },{intervals:[90],timeout:11000,message:'Walking '+axis+' to '+to}).toBeLessThan(0.25);
+      } finally { await page.keyboard.up(key); }
+    }
+    async function travel(page,from,to) {
+      for (const bay of path(from,to)) {
+        await walk(page,'x',bay.x);
+        await walk(page,'z',bay.z);
+      }
+    }
+    await travel(guest,intake,intake);
+    await travel(host,intake,relay);
+    await expect(host.locator('#action')).toContainText('Send test tone');
+    await host.keyboard.press('q');
+    await expect(guest.locator('#action')).toContainText('Answer relay');
+    await guest.locator('#operate').tap();
+    await expect(host.locator('#warning')).toContainText('Knocking above');
+    await guest.screenshot({path:'/tmp/relay-shift-mobile.png'});
+    await expect(host.locator('#warning')).toContainText('You are down',{timeout:10000});
+    await host.reload();
+    await expect(host.locator('#enter')).toBeEnabled();
+    await host.locator('#enter').click();
+    await expect(host.locator('#warning')).toContainText('You are down');
+    await travel(guest,intake,relay);
+    await expect(guest.locator('#action')).toContainText('Revive partner');
+    await guest.locator('#operate').tap();
+    await expect(host.locator('#warning')).not.toContainText('You are down');
+    // Travel together between strikes and extract as soon as both arrive.
+    await Promise.all([travel(host,relay,exit),travel(guest,relay,exit)]);
+    await expect(guest.locator('#action')).toContainText('Extract crew');
+    await guest.locator('#operate').tap();
+    for (const page of [host,guest]) await expect(page.locator('#result-title')).toHaveText('Crew extracted');
+    await host.screenshot({path:'/tmp/relay-shift-result.png'});
+    await host.locator('#replay').click();
+    await expect(host.locator('#hub-select')).toBeVisible();
     await expect(guest.locator('#hub-select')).toBeVisible({timeout:10000});
     await guest.locator('#hub-back').click();
     await expect(guest).toHaveURL(/\/game-hub\//);
-    for (const p of [host,guest]) await p.locator('#relay-room-link').click();
+    await guest.locator('#relay-room-link').click();
     await guest.locator('#hub-create').click();
     await host.getByRole('button',{name:/Join Relay guest/}).click({timeout:10000});
     await guest.locator('#hub-start').click();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);
+    await expect.poll(() => states.get(host)?.mission?.stage).toBe('trace');
+    // A forced seed deliberately repeats across lobbies; the protocol round is always fresh.
+    expect(states.get(host).round).not.toBe(firstRound);
     await guest.locator('#live-leave').click();
   } finally { await Promise.all(contexts.map(c => c.close())); }
 });

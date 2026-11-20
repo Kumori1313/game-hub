@@ -13,6 +13,8 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(page.locator('#hub-info')).toHaveText('Signed in as '+name);
   }
   try {
+    // Exercise keyboard-only look so synthetic headless pointer warps cannot turn the operator at spawn.
+    await host.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype,'requestPointerLock',{value:undefined}); });
     await Promise.all([enter(host,'Relay host'),enter(guest,'Relay guest'),enter(outsider,'Bystander')]);
     await host.locator('#hub-visibility').selectOption('private');
     await host.locator('#hub-create').click();
@@ -30,6 +32,16 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
     await guest.reload();
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
+    const plans = new Map([[host,[]],[guest,[]]]);
+    for (const [page,received] of plans) {
+      page.on('websocket', socket => {
+        if (!socket.url().endsWith('/relay-room/live')) return;
+        socket.on('framereceived',({payload}) => {
+          const message = JSON.parse(String(payload));
+          if (message.type === 'joined') received.push(message.layout);
+        });
+      });
+    }
     await host.locator('#hub-start').click();
     await expect(guest.locator('#enter')).toBeEnabled();
     await expect(host.locator('#connection')).toContainText('2/2 online');
@@ -48,10 +60,24 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#debug').click();
     await host.keyboard.press('e');
     await expect(guest.locator('#stats')).toContainText('P1 · on');
+    const plan = plans.get(host)[0];
+    expect(plan.version).toBe(1);
+    expect(plans.get(guest)[0]).toEqual(plan);
+    // Face north from Intake and walk up to the first bulkhead using real inputs.
+    await host.keyboard.down('w');
+    try { await expect(host.locator('#action')).toContainText('Open bulkhead',{timeout:10000}); }
+    finally { await host.keyboard.up('w'); }
+    await host.keyboard.press('r');
+    const entranceDoor = plan.passages.find(p => p.a === 'bay-0').id;
+    await expect(guest.locator('#stats')).toContainText('Open doors  '+entranceDoor);
     await host.reload();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     await host.locator('#debug').click();
     await expect(host.locator('#stats')).toContainText('P1 · on');
+    expect(plans.get(host).at(-1)).toEqual(plan);
+    expect(plans.get(host).length).toBeGreaterThan(1);
+    await expect(host.locator('#stats')).toContainText('Open doors  '+entranceDoor);
+    await expect(host.locator('#layout-map')).toBeVisible();
     await host.screenshot({path:'/tmp/relay-hub-live.png'});
     await host.locator('#live-leave').click();
     await expect(host).toHaveURL(/\/game-hub\//);

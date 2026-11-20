@@ -6,7 +6,11 @@ export default defineConfig(({ mode, command }) => {
   const backend = validateClientConfig(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_PUBLISHABLE_KEY);
   return {
     base: '/game-hub/',
-    server: { host: '127.0.0.1', port: 5173, strictPort: true },
+    server: {
+      host: '127.0.0.1', port: 5173, strictPort: true,
+      proxy: env.VITE_ENABLE_RELAY_ROOM === 'true'
+        ? {'/relay-room/': {target:'http://127.0.0.1:5176',ws:true}} : {},
+    },
     plugins: [{
       name: 'browser-security-policy',
       transformIndexHtml: { order: 'post', handler: html => securityMeta(html, backend, command === 'serve' ? 5173 : null) },

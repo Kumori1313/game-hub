@@ -88,7 +88,7 @@ Use `GAME_SITE_DIR=/absolute/path/to/tic-tac-toe POKER_SITE_DIR=/absolute/path/t
 
 Rooms can be public or code-only. Tic-tac-toe retains two seats; poker supports host-selected capacity from two to six. Completed tic-tac-toe games offer a rematch when both connected players agree. The initial X player is random, and rematches swap marks independently of hosting.
 
-The hub’s [shared room contract](https://github.com/Kumori1313/game-hub/blob/main/docs/shared-room-contract.md) documents the versioned API, previous-client compatibility, private codes, and round safety. Release checks now require both `GAME_SITE_DIR` and `POKER_SITE_DIR`, and verify all three repositories.
+The hub’s [shared room contract](https://github.com/Kumori1313/game-hub/blob/main/docs/shared-room-contract.md) documents the versioned API, previous-client compatibility, private codes, and round safety. Release checks accept `GAME_SITE_DIR`, `POKER_SITE_DIR`, and `RELAY_SITE_DIR` for the sibling checkouts.
 
 ## Poker (milestone 8.2)
 
@@ -97,3 +97,7 @@ Play-money No-Limit Hold’em supports 2–6 players, private hole cards, server
 Hosts can add or remove bots before starting a poker table. Bots and humans share the same seat limit, so solo play and mixed tables both work. Bots use a basic server-side strategy and are labeled in the lobby and game. Run `npm run test:bots` for local integration coverage; see [bot rules and behavior](docs/poker-contract.md#bots-and-mixed-tables).
 
 Run `npm run test:settings` locally for configurable poker and rebuy coverage. All players see the agreed settings before play; valid hosting preferences are saved in the browser.
+
+## Relay Room
+
+Two guests can play the co-op flashlight prototype through the shared lobby system. See [Relay Room setup and playtest](docs/relay-room.md) for the local migration, same-origin launch commands, and release settings.

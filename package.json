@@ -19,7 +19,9 @@
     "test:upgrade": "node scripts/test-room-upgrade.mjs",
     "test:poker": "node --env-file=.env.local scripts/test-poker.mjs",
     "test:bots": "node --env-file=.env.local scripts/test-bots.mjs",
-    "test:settings": "node --env-file=.env.local scripts/test-settings.mjs"
+    "test:settings": "node --env-file=.env.local scripts/test-settings.mjs",
+    "dev:relay": "node --env-file=.env.local --experimental-strip-types scripts/serve-session-test.mjs",
+    "test:relay": "node --env-file=.env.local node_modules/@playwright/test/cli.js test relay-room.spec.js"
   },
   "repository": {
     "type": "git",

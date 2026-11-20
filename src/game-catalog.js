@@ -19,6 +19,15 @@ const games = [
     details: ['2–6 players', 'No-Limit Hold’em'],
     devPort: 5175,
   },
+  {
+    slug: 'relay-room',
+    title: 'Relay Room',
+    titleId: 'relay-room-title',
+    linkId: 'relay-room-link',
+    linkLabel: 'Open Relay Room',
+    details: ['2 players', 'Co-op flashlight prototype'],
+    devPort: 5176,
+  },
 ];
 
 function element(tag, className, text) {
@@ -30,6 +39,7 @@ function element(tag, className, text) {
 
 export function mountGameCatalog(container, { dev = false } = {}) {
   for (const [index, game] of games.entries()) {
+    if (game.slug === 'relay-room' && import.meta.env.VITE_ENABLE_RELAY_ROOM !== 'true') continue;
     const first = index === 0;
     const card = first ? container : element('div', 'catalog-extra');
     const title = element('h2', '', game.title);
@@ -52,7 +62,7 @@ export function mountGameCatalog(container, { dev = false } = {}) {
     details.append(...game.details.map(detail => element('span', '', detail)));
     const link = element('a', 'button', game.linkLabel + ' ');
     const path = '/' + game.slug + '/';
-    link.href = dev ? 'http://127.0.0.1:' + game.devPort + path : path;
+    link.href = dev && game.slug !== 'relay-room' ? 'http://127.0.0.1:' + game.devPort + path : path;
     link.id = game.linkId;
     const arrow = element('span', '', '→');
     arrow.setAttribute('aria-hidden', 'true');

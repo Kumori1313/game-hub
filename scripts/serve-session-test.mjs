@@ -1,14 +1,18 @@
+import { pathToFileURL } from 'node:url';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 
+const relay = resolve(process.env.RELAY_SITE_DIR ?? '../Horror-Friendslop');
+const relayEnabled = process.env.VITE_ENABLE_RELAY_ROOM === 'true';
 const roots = {
+  ...(relayEnabled ? {'relay-room': resolve(relay,'dist')} : {}),
   'game-hub': resolve('dist'),
   'poker': resolve(process.env.POKER_SITE_DIR ?? '../poker', 'dist'),
   'tic-tac-toe': resolve(process.env.GAME_SITE_DIR ?? '../tic-tac-toe', 'dist'),
 };
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   try {
     const [slug, ...parts] = new URL(request.url, 'http://127.0.0.1').pathname.slice(1).split('/');
     const root = roots[slug];
@@ -19,4 +23,9 @@ createServer(async (request, response) => {
     response.writeHead(200, { 'Content-Type': types[extname(path)] ?? 'application/octet-stream' });
     response.end(body);
   } catch { response.writeHead(404); response.end('Not found'); }
-}).listen(4175, '127.0.0.1');
+});
+if (relayEnabled) {
+  const { attachHubRooms } = await import(pathToFileURL(resolve(relay,'src/server/hub-rooms.ts')).href);
+  attachHubRooms(server, process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+}
+server.listen(4175, '127.0.0.1');

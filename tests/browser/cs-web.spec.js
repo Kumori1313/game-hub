@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.skip(process.env.TEST_CS_WEB !== 'true', 'Requires the Counter-Attack Web preview on its own origin.');
 
 for (const relay of [false, true]) {
-  test(`Counter-Attack Web synchronizes gameplay over ${relay ? 'the fallback relay' : 'a direct connection'}`, async ({ browser, baseURL }) => {
+  test(`Counter-Attack Web synchronizes gameplay over ${relay ? 'the fallback relay' : 'a direct connection with late ICE candidates'}`, async ({ browser, baseURL }) => {
     test.setTimeout(160000);
     const [hostContext, guestContext] = await Promise.all([
       browser.newContext({
@@ -15,13 +15,16 @@ for (const relay of [false, true]) {
 
     for (const context of [hostContext, guestContext]) {
       await context.addInitScript(forceRelay => {
-        const observe = packet => {
-          if (packet?.type === 'frame' && packet.frame?.players) window.matchFrame = packet.frame;
+        const observe = (packet, transport) => {
+          if (packet?.type === 'frame' && packet.frame?.players) {
+            window.matchFrame = packet.frame;
+            window.matchTransport = transport;
+          }
         };
         window.addEventListener('message', event => {
           if (event.data?.type !== 'cs-web-connect') return;
           event.ports[0].addEventListener('message', ({ data }) => {
-            if (data?.type === 'relay-packet') observe(data.envelope.packet);
+            if (data?.type === 'relay-packet') observe(data.envelope.packet, 'relay');
           });
         });
         const Peer = window.RTCPeerConnection;
@@ -30,8 +33,19 @@ for (const relay of [false, true]) {
             if (forceRelay) throw new Error('Direct transport disabled by the test');
             super(...args);
             this.addEventListener('datachannel', ({ channel }) => {
-              channel.addEventListener('message', ({ data }) => observe(JSON.parse(data)));
+              channel.addEventListener('message', ({ data }) => observe(JSON.parse(data), 'direct'));
             });
+          }
+
+          get localDescription() {
+            const description = super.localDescription;
+            if (!description) return description;
+            // Make late events the only way the other browser learns candidates.
+            return { type: description.type, sdp: description.sdp.replace(/^a=(?:candidate:|end-of-candidates).*\r?\n/gm, '') };
+          }
+
+          set onicecandidate(handler) {
+            super.onicecandidate = event => setTimeout(() => handler?.call(this, event), 4500);
           }
         };
       }, relay);
@@ -71,6 +85,7 @@ for (const relay of [false, true]) {
         expect(await game.evaluate(() => localStorage.getItem('game-hub-auth'))).toBeNull();
       }
 
+      await expect.poll(() => gameGuest.evaluate(() => window.matchTransport)).toBe(relay ? 'relay' : 'direct');
       if (relay) await gameHost.locator('.csw-touch').getByRole('button', { name: 'Buy' }).tap();
       else await gameHost.getByLabel('First-person game view').press('b');
       await gameHost.locator('[data-action="buy-deagle"]').click();

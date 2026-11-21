@@ -45,7 +45,11 @@ export function mountCsWebRoom(container, client) {
   const destination = new URL(location.hostname === '127.0.0.1' ? localGame : liveGame);
   let actor, room, frame, port, launchId, relay;
   let busy = false;
-  let polling = false;
+  let signaling = false;
+  let queuedSignal;
+  let lastSignal;
+  let fastPollUntil = 0;
+  let nextPoll = 0;
   let syncing = false;
   let nextHeartbeat = 0;
 
@@ -55,6 +59,8 @@ export function mountCsWebRoom(container, client) {
     relay?.close();
     relay = null;
     port = null;
+    queuedSignal = undefined;
+    lastSignal = undefined;
     launchId = null;
   }
 
@@ -170,14 +176,32 @@ export function mountCsWebRoom(container, client) {
 
   async function signal(message = null) {
     if (!port || !room || room.status !== 'playing') return;
+    if (signaling) {
+      if (message) queuedSignal = { message, port };
+      return;
+    }
+    signaling = true;
     const recipient = port;
-    const { data, error } = await client.rpc('cs_web_signal', { p_lobby: room.id, p_message: message })
-      .abortSignal(AbortSignal.timeout(8000));
-    if (recipient !== port) return;
-    if (error) {
-      showError(error);
-      recipient.postMessage({ type: 'error', message: 'The lobby could not exchange connection details.' });
-    } else if (data) recipient.postMessage({ type: 'signal', message: data });
+    try {
+      const { data, error } = await client.rpc('cs_web_signal', { p_lobby: room.id, p_message: message })
+        .abortSignal(AbortSignal.timeout(8000));
+      if (recipient !== port) return;
+      if (error) {
+        showError(error);
+        recipient.postMessage({ type: 'error', message: 'The lobby could not exchange connection details.' });
+      } else if (data) {
+        const current = JSON.stringify(data);
+        if (lastSignal !== current) {
+          lastSignal = current;
+          recipient.postMessage({ type: 'signal', message: data });
+        }
+      }
+    } finally {
+      signaling = false;
+      const queued = queuedSignal;
+      queuedSignal = undefined;
+      if (queued && queued.port === port) void signal(queued.message);
+    }
   }
 
   window.addEventListener('message', event => {
@@ -189,6 +213,9 @@ export function mountCsWebRoom(container, client) {
     const channel = new MessageChannel();
     port = channel.port1;
     const boundPort = port;
+    lastSignal = undefined;
+    fastPollUntil = Date.now() + 25000;
+    nextPoll = 0;
     boundPort.onmessage = ({ data }) => {
       if (boundPort !== port) return;
       if (data?.type === 'signal' && data.message && JSON.stringify(data.message).length <= 24000) void signal(data.message);
@@ -264,11 +291,11 @@ export function mountCsWebRoom(container, client) {
       else setRoom(null);
     });
   });
+  setInterval(sync, 2500);
   setInterval(() => {
-    void sync();
-    if (!polling && port && room?.status === 'playing') {
-      polling = true;
-      void signal().finally(() => { polling = false; });
-    }
-  }, 2500);
+    const now = Date.now();
+    if (signaling || !port || room?.status !== 'playing' || now < nextPoll) return;
+    nextPoll = now + (now < fastPollUntil ? 750 : 2500);
+    void signal();
+  }, 750);
 }

@@ -8,14 +8,16 @@ The creator plays CT and runs the simulation. The other player plays T. Eight bo
 
 Game Hub verifies its own guest session and owns room discovery, code admission, seat leases, host-only start, and cleanup. The external game exchanges connection messages through a browser message port bound to the approved game origin, frame, and launch identifier. The identifier lives in a URL fragment. The external site receives player display names and role information. The hub keeps its Supabase session and room code on its own origin.
 
-Supabase stores the latest offer or answer from each active player in a private signaling slot. The RPC validates the caller’s session, live membership, game, room status, and signaling role. Removing a membership removes that player’s slot. Browsers prefer a direct WebRTC connection. If it fails, the hub uses two private Supabase Realtime Broadcast lanes. Room membership and the host or peer role govern access. The fallback sends roughly eight snapshots and ten input updates per second. It shares the existing Supabase Free quota and can have more latency. The creator’s browser runs the same match simulation over either connection.
+Supabase stores each active player's latest offer or answer and its accumulated ICE candidates in a private signaling slot. The RPC validates the caller’s session, live membership, game, room status, and signaling role. Removing a membership removes that player’s slot. Browsers keep exchanging candidates while they try to establish a direct WebRTC connection. If the direct path is unavailable, the hub uses two private Supabase Realtime Broadcast lanes governed by room membership and player role.
+
+On the fallback, the guest predicts their own movement and adjusts to the host's snapshots, which come roughly 13 times per second. The guest sends movement changes promptly and refreshes held input about every 80 ms. The creator’s browser resolves collisions, shots, purchases, and round outcomes over either connection. The relay shares the existing Supabase Free quota.
 
 ## Run locally
 
 1. Start local Supabase and apply all hub migrations. Set `VITE_ENABLE_CS_WEB=true` for the hub build or Vite server.
 2. Run `npm ci` and `npm run build` in the Counter-Attack Web checkout. Start it with `npm run preview -- --port 5177 --strictPort`.
 3. Build the hub and start `node scripts/serve-session-test.mjs`. Open `http://127.0.0.1:4175/game-hub/` in separate browser contexts to verify the two-origin launch.
-4. Run `npm run test:cs-web` against local Supabase for room and signaling tests. Stop the manual hub server and run `TEST_CS_WEB=true npm run test:e2e -- tests/browser/cs-web.spec.js` for the direct and forced-relay browser flows. The relay case disables WebRTC and uses a touch-enabled host context.
+4. Run `npm run test:cs-web` against local Supabase for room and signaling tests. Stop the manual hub server and run `TEST_CS_WEB=true npm run test:e2e -- tests/browser/cs-web.spec.js`. The direct case delays ICE candidates beyond four seconds. The relay case disables WebRTC and uses a touch-enabled host context.
 
 ## Deployment
 

@@ -149,8 +149,9 @@ Platform expansion and additional games are the next priority. Further poker var
 - [ ] Add and verify another game using the development guide, including guest entry, admission, complete gameplay, recovery, and return to the hub.
 - [x] Integrate a game deployed by another owner. [Counter-Attack Web](docs/cs-web.md) keeps its original Pages origin and uses Game Hub lobbies with a browser-hosted match.
 - [x] Verify Counter-Attack Web's cross-origin launch without exporting Game Hub credentials. Live Chromium checks passed for code admission, peer connection, guest recovery, and return to the hub.
-- [x] Add a private relay for Counter-Attack Web when direct connections fail. Live Chromium checks covered both transports, a touch-enabled host, equipped weapon sync, and guest movement while the host stopped rendering. Physical phone-to-laptop testing remains open.
+- [x] Add a private relay for Counter-Attack Web when direct connections fail. Live Chromium checks covered both transports, a touch-enabled host, equipped weapon sync, and guest movement while the host stopped rendering.
 - [x] Continue exchanging late ICE candidates and predict guest relay movement. Automated Chromium checks passed for a direct connection with delayed candidates and for gameplay over the forced relay.
+- [x] Verify Counter-Attack Web on two physical devices. Player testing confirmed a direct match and reported barely noticeable guest latency after the relay update.
 - [ ] Label standalone external links separately from games that use Game Hub lobbies.
 - [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.
 - [ ] Extract shared code after the lobby contract is verified. Define supported client versions, migrations, and compatibility errors.

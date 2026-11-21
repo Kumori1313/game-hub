@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('two hub guests play Relay Room, leave, and start a new room', async ({browser,baseURL}) => {
   const published = process.env.RELAY_RELEASE_SMOKE === 'true';
   if (published && baseURL !== 'https://kumori1313.github.io') throw Error('Use the trusted Pages origin for the release smoke test.');
-  test.skip(!published && process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room runtime');
+  test.skip(!published && process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room game');
   test.setTimeout(240000);
   const contexts = await Promise.all((published ? [0,1] : [0,1,2]).map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
   const [host,guest,outsider] = await Promise.all(contexts.map(c => c.newPage()));
@@ -43,32 +43,32 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const plans = new Map([[host,[]],[guest,[]]]);
     for (const [page,received] of plans) {
       page.on('websocket', socket => {
-        if (!socket.url().endsWith('/relay-room/live')) return;
-        socket.on('framereceived',({payload}) => {
-          const message = JSON.parse(String(payload));
-          if (message.type === 'state') states.set(page,message.state);
-          if (message.type === 'joined') received.push(message.layout);
-        });
+        if (!new URL(socket.url()).pathname.endsWith('/realtime/v1/websocket')) return;
+        function observe({payload}) {
+          const wire = JSON.parse(String(payload));
+          const [topic,event,body] = Array.isArray(wire) ? wire.slice(2) : [wire.topic,wire.event,wire.payload];
+          if (!topic?.endsWith(':host') || event !== 'broadcast') return;
+          const message = body.payload;
+          if (message.type === 'welcome') received.push(message.layout);
+          if (message.state) states.set(page,message.state);
+        }
+        socket.on('framereceived',observe);
+        socket.on('framesent',observe);
       });
     }
     await host.locator('#hub-start').click();
     await expect(guest.locator('#enter')).toBeEnabled();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(guest.url()).searchParams.get('lobby')).toBe(room);
-    if (outsider) {
-      // A valid outsider guest cannot open the known live lobby, even with its ID.
-      const denied = await outsider.evaluate(id => new Promise((resolve,reject) => {
-        const ws = new WebSocket('ws://'+location.host+'/relay-room/live');
-        ws.onopen = () => ws.send(JSON.stringify({type:'join',ticket:null,admission:{
-          lobby:id,round:1,token:JSON.parse(localStorage.getItem('game-hub-auth')).access_token,
-        }}));
-        ws.onmessage = () => { ws.close(); reject(Error('Outsider received live data')); };
-        ws.onclose = e => resolve(e.code);
-      }),room);
-      expect(denied).toBe(1008);
-    }
-    await host.locator('#enter').click();
+    const duplicate = await contexts[0].newPage();
+    await duplicate.goto(host.url());
+    await expect(duplicate.locator('#connection')).toContainText('Already playing in another tab');
+    await duplicate.close();
     await guest.locator('#debug').click();
+    await guest.locator('#outage').click();
+    await expect(host.locator('#connection')).toContainText('1/2 online');
+    await expect(host.locator('#connection')).toContainText('2/2 online');
+    await host.locator('#enter').click();
     await host.keyboard.press('e');
     await expect(guest.locator('#stats')).toContainText('P1 · on');
     const firstRound = states.get(host).round;
@@ -87,7 +87,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await host.locator('#debug').click();
     await expect(host.locator('#stats')).toContainText('P1 · on');
     expect(plans.get(host).at(-1)).toEqual(plan);
-    expect(plans.get(host).length).toBeGreaterThan(1);
+    await expect.poll(() => plans.get(host).length).toBeGreaterThan(1);
     await expect(host.locator('#stats')).toContainText('Open doors  '+entranceDoor);
     await expect(host.locator('#layout-map')).toBeVisible();
     await host.screenshot({path:'/tmp/relay-hub-live.png'});
@@ -194,10 +194,17 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#hub-start').click();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);
+    await expect.poll(() => states.get(host)?.round).not.toBe(firstRound);
     await expect.poll(() => states.get(host)?.mission?.stage).toBe(plans.get(host).at(-1).callout === 'black-start' ? 'prime' : 'trace');
     // A forced seed deliberately repeats across lobbies; the protocol round is always fresh.
     expect(states.get(host).round).not.toBe(firstRound);
-    await guest.locator('#live-leave').click();
-    await expect(host.locator('#hub-select')).toBeVisible({timeout:12000});
+    if (published) {
+      await guest.locator('#live-leave').click();
+    } else {
+      // Closing the creator's browser without clicking Leave exercises the grace timeout.
+      await guest.close();
+      await expect(host.locator('#connection')).toHaveText('Reconnecting…');
+    }
+    await expect(host.locator('#hub-select')).toBeVisible({timeout:30000});
   } finally { await Promise.all(contexts.map(c => c.close())); }
 });

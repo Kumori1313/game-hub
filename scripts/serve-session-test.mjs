@@ -1,4 +1,3 @@
-import { pathToFileURL } from 'node:url';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
@@ -24,8 +23,4 @@ const server = createServer(async (request, response) => {
     response.end(body);
   } catch { response.writeHead(404); response.end('Not found'); }
 });
-if (relayEnabled) {
-  const { attachHubRooms } = await import(pathToFileURL(resolve(relay,'src/server/hub-rooms.ts')).href);
-  attachHubRooms(server, process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-}
 server.listen(4175, '127.0.0.1');

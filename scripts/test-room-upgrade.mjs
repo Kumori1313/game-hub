@@ -78,5 +78,28 @@ try {
  end$$;
  reset role;`;
  run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,snapshotBefore+readFileSync(`supabase/migrations/${adapterMigration}`,'utf8')+adapterChecks);
+ const relayRoom='30000000-0000-0000-0000-000000000001';
+ let checksRelay=`update public.game_catalog set playable=true where id='relay-room';`;
+ for(const i of [9,10,11]) checksRelay+=`insert into auth.users values('${user(i)}','{"display_name":"Relay tester"}',null,null);insert into auth.sessions values('${user(i)}','${user(i)}',null);`;
+ checksRelay+=`insert into game_private.lobbies(id,game_id,host_id,status,capacity,round) values('${relayRoom}','relay-room','${user(9)}','playing',2,1);`;
+ for(const [seat,i] of [9,10].entries()) checksRelay+=`insert into game_private.memberships(lobby_id,user_id,display_name,seat) values('${relayRoom}','${user(i)}','Relay tester',${seat+1});insert into game_private.connections values('${relayRoom}','${user(i)}','${user(i)}',now()+interval '5 minutes');`;
+ for(const i of [9,10,11]) {
+  checksRelay+=`select set_config('request.jwt.claims','{"sub":"${user(i)}","session_id":"${user(i)}"}',false);`;
+  for(const lane of ['host','guest']) {
+   const topic=`relay:${relayRoom}:1:${lane}`;
+   const writer=lane==='host' ? 9 : 10;
+   checksRelay+=`do $$begin
+    if game_private.relay_broadcast_allowed('${topic}',false) is distinct from ${i!==11}
+      or game_private.relay_broadcast_allowed('${topic}',true) is distinct from ${i===writer}
+      or game_private.relay_broadcast_allowed('relay:${relayRoom}:2:${lane}',false) then
+      raise exception 'Unexpected Relay channel permission';end if;end$$;`;
+  }
+ }
+ const relayMigrations=['20261120050925','20261121082546'].map(prefix=>{
+  const file=readdirSync('supabase/migrations').find(name=>name.startsWith(prefix));
+  return readFileSync(`supabase/migrations/${file}`,'utf8');
+ });
+ run(`psql -U postgres -d ${database} -v ON_ERROR_STOP=1 -q`,relayMigrations.join('\n')+checksRelay);
+ console.log('PASS: only the two active Relay Room seats read the current round, and each writes its own channel.');
  console.log('PASS: isolated upgrade preserves legacy seats, rooms, active gameplay, catalog data, and private grants through the Hold’em, bot, settings, and adapter upgrades.');
 } finally { run(`dropdb -U postgres ${database}`); }

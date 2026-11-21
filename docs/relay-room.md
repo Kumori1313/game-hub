@@ -1,6 +1,6 @@
 # Relay Room local integration
 
-The game ID is `relay-room`, the launch path is `/relay-room/`, and the prototype supports exactly two guests. A host can start once both seats have live leases. Private rooms use the existing code-entry flow. Leaving an active round closes the room and releases both memberships. Use a new room for another run. The game checkout provides its own original scene and the trusted Node WebSocket runtime. Both projects use the MIT license.
+The game ID is `relay-room`, the launch path is `/relay-room/`, and the prototype supports exactly two guests. A host can start once both seats have live leases. Private rooms use the existing code-entry flow. Leaving an active round closes the room and releases both memberships. Use a new room for another run. The game checkout provides its own original scene and the simulation that runs in the lobby creator’s browser. Both projects use the MIT license.
 
 ## Set up and run
 
@@ -12,6 +12,6 @@ The game ID is `relay-room`, the launch path is `/relay-room/`, and the prototyp
 
 ## Publication
 
-The catalog build flag controls the hub link. The database flag controls whether the host can start a game. Enable production only after the compatible client is available under the approved path and its trusted WSS runtime is reachable. The game README describes the runtime command, TLS proxy, and client origin settings.
+The catalog build flag controls the hub link. The database flag controls whether the host can start a game. Enable production only after the compatible client is available under the approved path and the private Realtime policies are installed. The game README describes the host refresh window, free-tier traffic budget, and private release smoke.
 
-For hot reload, run `npm run dev:hub` in the game checkout and `npm run dev` in the hub checkout. Enter through `http://127.0.0.1:5173/game-hub/`. The hub proxies the game route and its WebSocket on the same origin.
+For hot reload, run `npm run dev:hub` in the game checkout and `npm run dev` in the hub checkout. Enter through `http://127.0.0.1:5173/game-hub/`. The hub proxies the game route on the same origin.

@@ -146,7 +146,7 @@ Platform expansion and additional games are the next priority. Further poker var
 - [x] Publish a [game development guide](docs/game-development-guide.md) covering independent UI, existing routes, shared identity, backend integration, and verification.
 - [x] Generalize hub navigation so new games can be listed through reviewed entries in `src/game-catalog.js`. Verify the existing development and production routes.
 - [x] Generalize game-specific room dispatch through private backend adapters. Verify existing room behavior and snapshot compatibility locally.
-- [ ] Add and verify another game using the development guide, including guest entry, admission, complete gameplay, recovery, and return to the hub.
+- [x] Add and verify another game using the development guide. [Relay Room](docs/relay-room.md) covers guest entry, code admission, a full playthrough through extraction, recovery after refresh, and return to the hub in its browser playtest.
 - [x] Integrate a game deployed by another owner. [Counter-Attack Web](docs/cs-web.md) keeps its original Pages origin and uses Game Hub lobbies with a browser-hosted match.
 - [x] Verify Counter-Attack Web's cross-origin launch without exporting Game Hub credentials. Live Chromium checks passed for code admission, peer connection, guest recovery, and return to the hub.
 - [x] Add a private relay for Counter-Attack Web when direct connections fail. Live Chromium checks covered both transports, a touch-enabled host, equipped weapon sync, and guest movement while the host stopped rendering.

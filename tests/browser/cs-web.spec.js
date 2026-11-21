@@ -95,7 +95,7 @@ for (const relay of [false, true]) {
       await expect.poll(() => gameGuest.evaluate(() => window.matchFrame?.players[0].weapon)).toBe('deagle');
 
       await gameGuest.getByLabel('First-person game view').press('b');
-      await gameGuest.getByRole('button', { name: '6 Equipment' }).click();
+      await gameGuest.getByRole('button', { name: /Equipment$/ }).click();
       await gameGuest.locator('[data-action="buy-kevlar"]').click();
       await expect(gameGuest.locator('[data-ui="cash"]')).toHaveText('$150', { timeout: 12000 });
       await gameGuest.evaluate(() => location.reload());

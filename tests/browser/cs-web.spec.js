@@ -2,59 +2,109 @@ import { expect, test } from '@playwright/test';
 
 test.skip(process.env.TEST_CS_WEB !== 'true', 'Requires the Counter-Attack Web preview on its own origin.');
 
-test('two Game Hub guests launch the external game and synchronize a peer purchase', async ({ browser, baseURL }) => {
-  test.setTimeout(120000);
-  const [hostContext, guestContext] = await Promise.all([
-    browser.newContext({ viewport: { width: 1024, height: 720 } }),
-    browser.newContext({ viewport: { width: 1024, height: 720 } }),
-  ]);
-  const host = await hostContext.newPage();
-  const guest = await guestContext.newPage();
-  async function enter(page, name) {
-    await page.goto(baseURL + '/game-hub/');
-    await page.getByLabel('Display name').fill(name);
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    await page.getByRole('link', { name: 'Open Counter-Attack Web lobbies' }).click();
-    await expect(page.getByRole('button', { name: 'Create code-only lobby' })).toBeVisible();
-  }
-  async function openMatch(page) {
-    const popup = page.waitForEvent('popup');
-    await page.getByRole('button', { name: 'Open match', exact: true }).click();
-    return popup;
-  }
+for (const relay of [false, true]) {
+  test(`Counter-Attack Web synchronizes gameplay over ${relay ? 'the fallback relay' : 'a direct connection'}`, async ({ browser, baseURL }) => {
+    test.setTimeout(160000);
+    const [hostContext, guestContext] = await Promise.all([
+      browser.newContext({
+        viewport: { width: 850, height: 650 },
+        ...(relay ? { hasTouch: true, isMobile: true } : {}),
+      }),
+      browser.newContext({ viewport: { width: 850, height: 650 } }),
+    ]);
 
-  try {
-    await enter(host, 'CS Web Host');
-    await enter(guest, 'CS Web Guest');
-    await host.getByRole('button', { name: 'Create code-only lobby' }).click();
-    const invite = host.locator('#cs-invite');
-    await expect(invite).toBeVisible();
-    await guest.getByLabel('Room code').fill((await invite.textContent()).replace('Room code: ', ''));
-    await guest.getByRole('button', { name: 'Join with code' }).click();
-    await expect(host.getByRole('button', { name: 'Start match' })).toBeEnabled({ timeout: 15000 });
-    await host.getByRole('button', { name: 'Start match' }).click();
-
-    const [gameHost, gameGuest] = await Promise.all([openMatch(host), openMatch(guest)]);
-    for (const [page, game] of [[host, gameHost], [guest, gameGuest]]) {
-      await game.waitForURL(url => url.origin !== new URL(page.url()).origin);
-      await expect(game.getByLabel('First-person game view')).toBeVisible({ timeout: 35000 });
-      await expect(game.locator('.csw-hud')).toHaveAttribute('data-phase', /freeze|live/, { timeout: 35000 });
-      expect(await game.evaluate(() => localStorage.getItem('game-hub-auth'))).toBeNull();
+    for (const context of [hostContext, guestContext]) {
+      await context.addInitScript(forceRelay => {
+        const observe = packet => {
+          if (packet?.type === 'frame' && packet.frame?.players) window.matchFrame = packet.frame;
+        };
+        window.addEventListener('message', event => {
+          if (event.data?.type !== 'cs-web-connect') return;
+          event.ports[0].addEventListener('message', ({ data }) => {
+            if (data?.type === 'relay-packet') observe(data.envelope.packet);
+          });
+        });
+        const Peer = window.RTCPeerConnection;
+        window.RTCPeerConnection = class extends Peer {
+          constructor(...args) {
+            if (forceRelay) throw new Error('Direct transport disabled by the test');
+            super(...args);
+            this.addEventListener('datachannel', ({ channel }) => {
+              channel.addEventListener('message', ({ data }) => observe(JSON.parse(data)));
+            });
+          }
+        };
+      }, relay);
     }
-    await gameGuest.keyboard.press('b');
-    await gameGuest.getByRole('button', { name: '6 Equipment' }).click();
-    await gameGuest.locator('[data-action="buy-kevlar"]').click({ timeout: 10000 });
-    await expect(gameGuest.locator('[data-ui="cash"]')).toHaveText('$150', { timeout: 12000 });
-    const gameUrl = gameGuest.url();
-    await gameGuest.reload();
-    await expect(gameGuest.locator('[data-ui="cash"]')).toHaveText('$150', { timeout: 35000 });
-    expect(gameGuest.url()).toBe(gameUrl);
 
-    await host.getByRole('button', { name: 'Leave lobby' }).click();
-    await expect(gameGuest.getByRole('status').filter({ hasText: 'lobby has ended' })).toBeVisible({ timeout: 15000 });
-    await gameGuest.getByRole('link', { name: 'Back to Game Hub' }).click();
-    await expect(gameGuest.getByRole('button', { name: 'Create public lobby' })).toBeVisible();
-  } finally {
-    await Promise.all([hostContext.close(), guestContext.close()]);
-  }
-});
+    const host = await hostContext.newPage();
+    const guest = await guestContext.newPage();
+    async function enter(page, name) {
+      await page.goto(baseURL + '/game-hub/');
+      await page.getByLabel('Display name').fill(name);
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByRole('link', { name: 'Open Counter-Attack Web lobbies' }).click();
+      await expect(page.getByRole('button', { name: 'Create code-only lobby' })).toBeVisible();
+    }
+    async function openMatch(page) {
+      await page.getByRole('button', { name: 'Open match', exact: true }).click();
+      const iframe = await page.locator('#cs-frame iframe').elementHandle();
+      return iframe.contentFrame();
+    }
+
+    try {
+      await enter(host, 'CS Web Host');
+      await enter(guest, 'CS Web Guest');
+      await host.getByRole('button', { name: 'Create code-only lobby' }).click();
+      const invite = host.locator('#cs-invite');
+      await expect(invite).toBeVisible();
+      await guest.getByLabel('Room code').fill((await invite.textContent()).replace('Room code: ', ''));
+      await guest.getByRole('button', { name: 'Join with code' }).click();
+      await expect(host.getByRole('button', { name: 'Start match' })).toBeEnabled({ timeout: 15000 });
+      await host.getByRole('button', { name: 'Start match' }).click();
+
+      const [gameHost, gameGuest] = await Promise.all([openMatch(host), openMatch(guest)]);
+      for (const [page, game] of [[host, gameHost], [guest, gameGuest]]) {
+        await game.waitForURL(url => url.origin !== new URL(page.url()).origin);
+        await expect(game.getByLabel('First-person game view')).toBeVisible({ timeout: 45000 });
+        await expect(game.locator('.csw-hud')).toHaveAttribute('data-phase', /freeze|live/, { timeout: 45000 });
+        expect(await game.evaluate(() => localStorage.getItem('game-hub-auth'))).toBeNull();
+      }
+
+      if (relay) await gameHost.locator('.csw-touch').getByRole('button', { name: 'Buy' }).tap();
+      else await gameHost.getByLabel('First-person game view').press('b');
+      await gameHost.locator('[data-action="buy-deagle"]').click();
+      await expect.poll(() => gameGuest.evaluate(() => window.matchFrame?.players[0].weapon)).toBe('deagle');
+
+      await gameGuest.getByLabel('First-person game view').press('b');
+      await gameGuest.getByRole('button', { name: '6 Equipment' }).click();
+      await gameGuest.locator('[data-action="buy-kevlar"]').click();
+      await expect(gameGuest.locator('[data-ui="cash"]')).toHaveText('$150', { timeout: 12000 });
+      await gameGuest.evaluate(() => location.reload());
+      await expect(gameGuest.locator('[data-ui="cash"]')).toHaveText('$150', { timeout: 45000 });
+
+      // Suppress host rendering to model a background tab. Its simulation must
+      // still progress, accept guest movement, and replicate the new position.
+      await gameHost.evaluate(() => { window.requestAnimationFrame = () => 0; });
+      await expect(gameGuest.locator('.csw-hud')).toHaveAttribute('data-phase', 'live', { timeout: 45000 });
+      const before = await gameGuest.evaluate(() => window.matchFrame.players[5]);
+      await gameGuest.getByLabel('First-person game view').focus();
+      await guest.keyboard.down('w');
+      try {
+        await expect.poll(async () => {
+          const after = await gameGuest.evaluate(() => window.matchFrame.players[5]);
+          return Math.hypot(after.x - before.x, after.z - before.z);
+        }, { timeout: 5000 }).toBeGreaterThan(0.2);
+      } finally {
+        await guest.keyboard.up('w');
+      }
+
+      await host.getByRole('button', { name: 'Leave match', exact: true }).click();
+      await expect(gameGuest.getByRole('status').filter({ hasText: 'lobby has ended' })).toBeVisible({ timeout: 15000 });
+      await guest.getByRole('button', { name: 'Return to lobby' }).click();
+      await expect(guest.getByRole('button', { name: 'Create public lobby' })).toBeVisible();
+    } finally {
+      await Promise.all([hostContext.close(), guestContext.close()]);
+    }
+  });
+}

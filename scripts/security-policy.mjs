@@ -19,7 +19,7 @@ export function validateClientConfig(url, key) {
   return backend;
 }
 
-export function securityMeta(html, backend, devPort) {
+export function securityMeta(html, backend, devPort, frames = []) {
   const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
     .map(match => `'sha256-${createHash('sha256').update(match[1].replace(/\r\n?/g, '\n')).digest('base64')}'`);
   const connect = ["'self'"];
@@ -34,7 +34,7 @@ export function securityMeta(html, backend, devPort) {
     "default-src 'self'", `script-src 'self' ${hashes.join(' ')}`,
     "style-src 'self' 'unsafe-inline'", "img-src 'self' data:",
     `connect-src ${connect.join(' ')}`, "object-src 'none'", "base-uri 'none'",
-    "form-action 'none'", "frame-src 'none'",
+    "form-action 'none'", `frame-src ${frames.length ? frames.join(' ') : "'none'"}`,
   ].join('; ');
   return [
     { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content }, injectTo: 'head-prepend' },

@@ -45,10 +45,25 @@ try {
   assert.deepEqual((await signal(host, offer)).data, ready);
   assert.deepEqual((await signal(peer, answer)).data, offer);
   assert.deepEqual((await signal(host)).data, answer);
+  const relay = { kind: 'relay', from: hostId, to: peerId };
+  const relayReady = { kind: 'relay-ready', from: peerId, to: hostId };
+  assert.equal((await signal(peer, relay)).error?.code, '22023');
+  assert.equal((await signal(host, relayReady)).error?.code, '22023');
+  assert.ifError((await signal(host, relay)).error);
+  assert.deepEqual((await signal(peer, relayReady)).data, relay);
+  assert.deepEqual((await signal(host)).data, relayReady);
+  const channel = outsider.client.channel(`cs-web:${id}:1:host`, { config: { private: true } });
+  const joined = await new Promise(resolve => {
+    channel.on('broadcast', { event: 'match' }, () => {}).subscribe(resolve);
+  });
+  assert.equal(joined, 'CHANNEL_ERROR', 'Only room members can subscribe to the relay.');
   assert.ifError((await room(host, 'leave')).error);
   assert.equal((await signal(peer)).error?.code, '42501');
   console.log('PASS: code-only admission, host-only start, role-bound signal exchange, and signaling revoked on leave.');
 } finally {
   if (id && host) await room(host, 'leave');
-  await Promise.all(clients.map(client => client.auth.signOut()));
+  await Promise.all(clients.map(async client => {
+    await client.removeAllChannels();
+    await client.auth.signOut();
+  }));
 }

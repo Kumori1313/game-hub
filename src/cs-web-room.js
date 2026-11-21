@@ -1,3 +1,5 @@
+import { openCsWebRelay } from './cs-web-relay.js';
+
 const gameId = 'cs-web';
 const liveGame = 'https://vortezler.github.io/Counter-Attack-Web/';
 const localGame = 'http://127.0.0.1:5177/cs-web/';
@@ -5,7 +7,7 @@ const localGame = 'http://127.0.0.1:5177/cs-web/';
 export function mountCsWebRoom(container, client) {
   container.setAttribute('aria-labelledby', 'cs-web-title');
   container.innerHTML = `<h2 id="cs-web-title">Counter-Attack Web</h2>
-    <p class="hint">Two players and eight bots. The room creator runs the match. Keep this lobby tab open while playing.</p>
+    <p class="hint">Two players and eight bots. The room creator runs the match.</p>
     <div id="cs-discovery">
       <div class="lobby-actions">
         <button class="button" type="button" id="cs-create">Create public lobby</button>
@@ -29,13 +31,19 @@ export function mountCsWebRoom(container, client) {
         <button class="secondary" type="button" id="cs-leave">Leave lobby</button>
       </div>
     </div>
+    <div class="cs-match-stage" id="cs-match-stage" hidden>
+      <div class="cs-match-bar"><span>Counter-Attack Web</span>
+        <button type="button" class="secondary" id="cs-match-leave">Leave match</button>
+      </div>
+      <div id="cs-frame"></div>
+    </div>
     <p id="cs-status" role="status"></p>
     <p id="cs-error" class="error" role="alert"></p>
     <a href="/game-hub/" id="cs-back">Back to games</a>`;
   const node = id => container.querySelector('#' + id);
   const connection = crypto.randomUUID();
   const destination = new URL(location.hostname === '127.0.0.1' ? localGame : liveGame);
-  let actor, room, popup, port, launchId;
+  let actor, room, frame, port, launchId, relay;
   let busy = false;
   let polling = false;
   let syncing = false;
@@ -44,8 +52,9 @@ export function mountCsWebRoom(container, client) {
   function closeBridge(message) {
     if (message && port) port.postMessage({ type: 'ended', message });
     port?.close();
+    relay?.close();
+    relay = null;
     port = null;
-    popup = null;
     launchId = null;
   }
 
@@ -57,6 +66,13 @@ export function mountCsWebRoom(container, client) {
     if (url.href !== location.href) history.replaceState(null, '', url);
     if (!next || next.status === 'closed') closeBridge('The lobby has ended. Return to Game Hub.');
     render();
+  }
+
+  function removeFrame() {
+    closeBridge();
+    frame?.remove();
+    frame = null;
+    node('cs-match-stage').hidden = true;
   }
 
   function render() {
@@ -71,8 +87,9 @@ export function mountCsWebRoom(container, client) {
     node('cs-start').hidden = room?.status !== 'waiting' || room.host_id !== actor;
     node('cs-start').disabled = busy || !room?.playable || room.members.filter(member => member.connected).length !== 2;
     node('cs-launch').hidden = !active;
+    node('cs-match-leave').textContent = active ? 'Leave match' : 'Return to lobby';
     node('cs-status').textContent = room?.status === 'waiting' ? 'Waiting for the match to start.'
-      : active ? 'Match started. Open the game in a new tab.'
+      : active ? 'Match started. Open the game.'
       : room?.status === 'closed' ? room.reason || 'The lobby ended.' : '';
   }
 
@@ -164,18 +181,22 @@ export function mountCsWebRoom(container, client) {
   }
 
   window.addEventListener('message', event => {
-    if (!popup || event.origin !== destination.origin || event.source !== popup
+    if (!frame || event.origin !== destination.origin || event.source !== frame.contentWindow
       || event.data?.type !== 'cs-web-ready' || event.data.launch !== launchId || room?.status !== 'playing') return;
     port?.close();
+    relay?.close();
+    relay = null;
     const channel = new MessageChannel();
     port = channel.port1;
     const boundPort = port;
     boundPort.onmessage = ({ data }) => {
       if (boundPort !== port) return;
       if (data?.type === 'signal' && data.message && JSON.stringify(data.message).length <= 24000) void signal(data.message);
-      else if (data?.type === 'exit') void perform(async () => { await action('leave'); setRoom(null); });
+      else if (data?.type === 'relay-start' && !relay) relay = openCsWebRelay(client, room, room.host_id === actor, boundPort);
+      else if (data?.type === 'relay-packet') relay?.send(data.envelope);
+      else if (data?.type === 'exit') void leaveMatch();
     };
-    popup.postMessage({
+    frame.contentWindow.postMessage({
       type: 'cs-web-connect', launch: launchId, host: room.host_id === actor,
       hostName: room.members.find(member => member.user_id === room.host_id)?.display_name,
       peerName: room.members.find(member => member.user_id !== room.host_id)?.display_name,
@@ -201,18 +222,26 @@ export function mountCsWebRoom(container, client) {
   });
   node('cs-launch').onclick = () => {
     if (room?.status !== 'playing') return;
-    if (popup && !popup.closed) { popup.focus(); return; }
-    closeBridge();
+    removeFrame();
     launchId = crypto.randomUUID();
     const url = new URL(destination);
     url.hash = new URLSearchParams({ 'game-hub': launchId, parent: location.origin }).toString();
-    popup = window.open(url, '_blank');
-    if (!popup) node('cs-error').textContent = 'Allow pop-ups to open the match.';
+    frame = document.createElement('iframe');
+    frame.title = 'Counter-Attack Web match';
+    frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-pointer-lock');
+    frame.src = url.href;
+    node('cs-frame').append(frame);
+    node('cs-match-stage').hidden = false;
   };
-  node('cs-leave').onclick = () => perform(async () => {
-    if (room.status !== 'closed') await action('leave');
-    setRoom(null);
-  });
+  function leaveMatch() {
+    return perform(async () => {
+      if (room && room.status !== 'closed') await action('leave');
+      setRoom(null);
+      removeFrame();
+    });
+  }
+  node('cs-leave').onclick = leaveMatch;
+  node('cs-match-leave').onclick = leaveMatch;
   node('cs-back').onclick = event => {
     if (!room) return;
     event.preventDefault();
@@ -237,7 +266,6 @@ export function mountCsWebRoom(container, client) {
   });
   setInterval(() => {
     void sync();
-    if (popup?.closed) closeBridge();
     if (!polling && port && room?.status === 'playing') {
       polling = true;
       void signal().finally(() => { polling = false; });

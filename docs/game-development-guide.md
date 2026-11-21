@@ -1,6 +1,6 @@
 # Developing a Game for Game Hub
 
-This guide assumes you have the Game Hub source checkout. It explains how to build a separate game that uses the hub's navigation, guest identity, and multiplayer services. Use tic-tac-toe and poker as working references; new games still need reviewed hub/backend integration.
+This guide assumes you have the Game Hub source checkout. If your game already runs its own lobbies and matchmaking, follow [List a standalone game](#list-a-standalone-game). For games that use Game Hub guest identity and lobbies, the rest of the guide explains the shared routes and backend contract. Use tic-tac-toe and poker as working references.
 
 ## Your game can have its own UI
 
@@ -10,7 +10,7 @@ Compatibility comes from routes, identity, and server contracts. Provide accessi
 
 ## Understand the current integration boundary
 
-The hub launches separate static websites with normal links. It does not embed games in iframes or discover executable plugins. Production paths currently share one origin:
+The hub renders game links from reviewed entries in [`src/game-catalog.js`](../src/game-catalog.js). Standalone links open the game's website. Integrated games use the hub's guest and lobby flow. The production paths below share the same origin.
 
 | Site | Production path |
 | --- | --- |
@@ -18,9 +18,30 @@ The hub launches separate static websites with normal links. It does not embed g
 | Tic-tac-toe | `https://kumori1313.github.io/tic-tac-toe/` |
 | Poker | `https://kumori1313.github.io/poker/` |
 
-The hub renders game links from the reviewed entries in `src/game-catalog.js`. Add an entry there to show a new game in the menu. The database catalog and room dispatch control multiplayer admission separately. Room dispatch has private adapters for `tic-tac-toe` and `poker`. Register each new game with the backend before enabling its rooms.
+For shared lobbies, register the game with the backend before enabling its rooms. The database catalog and room adapters control admission. [Counter-Attack Web](cs-web.md) uses a reviewed cross-origin launch that keeps the guest session in Game Hub.
 
-A simple external link is another integration level, but it does not grant shared identity or lobbies. A different owner's GitHub Pages site has a different origin. It cannot access the saved hub session just by using the same storage key. Shared integration there requires a separately implemented and reviewed authentication handoff. Never put access tokens, refresh tokens, or room codes in launch URLs.
+## List a standalone game
+
+Use this path when your game owns its sign-in, lobbies, and matchmaking. Game Hub opens the published game through its catalog, and players continue through your game's usual flow. A standalone listing only needs an entry in the frontend catalog.
+
+1. In your hub pull request, include the game title, a unique lowercase slug, maintainer, source repository if public, player count, and the public HTTPS URL where players begin. Describe whether players need a separate account or can play as guests.
+2. Add an entry to [`src/game-catalog.js`](../src/game-catalog.js) with a unique `titleId` and `linkId`. Set `launchPath` to the full URL so the catalog uses it in both development and production. Include **External game** in `details` and describe sign-in if required. Name the button after the destination or action, such as **Play on Example Games**. Keep credentials and private invite codes out of the URL.
+
+   ```js
+   {
+     slug: 'example-arena',
+     title: 'Example Arena',
+     titleId: 'example-arena-title',
+     linkId: 'example-arena-link',
+     linkLabel: 'Play on Example Games',
+     details: ['External game', '2–4 players', 'Separate account required'],
+     launchPath: 'https://games.example/arena/',
+   },
+   ```
+
+3. Follow the [hub's local setup](../README.md), run `npm run dev`, and open `http://127.0.0.1:5173/game-hub/` in a fresh browser profile. Enter a Game Hub display name to open the catalog. Check the label, follow the link, and verify that a player can reach the game's lobby or matchmaking through its own entry flow. Check the deployed hub link after release.
+
+See [Milestone 8.4](../multiplayer_game_hub_roadmap.md#milestone-84--platform-and-ecosystem-expansion) for third-party integration work that involves shared identity or Game Hub lobbies.
 
 ## Divide the code by responsibility
 
@@ -143,7 +164,7 @@ Render confirmed snapshots. Ignore older rounds/revisions and late responses fro
 
 ## Wire navigation and test one origin locally
 
-A complete integration PR must cover both repositories:
+A shared-lobby integration PR covers both repositories.
 
 - Add a reviewed entry in `src/game-catalog.js` with the slug, title, link label, display details, unique title and link IDs, and local dev port. For `my-game` on port `5176`, the hub generates `/my-game/` in production and `http://127.0.0.1:5176/my-game/` in development.
 - Add the catalog/backend migration and new-game lifecycle/action tests in the hub. Keep gameplay disabled until its compatible client and reviewed backend are ready.
@@ -173,4 +194,4 @@ Include these in your contribution:
 - Defined lifecycle, private-state boundaries, supported contracts, and recovery behavior.
 - Test results and screenshots showing the game's own UI and complete navigation flow.
 
-The acceptance criterion is a game that reliably reuses the platform's identity, admission, and routing. Matching the hub's visual design is optional.
+For shared-lobby integration, verify that the game reliably reuses the platform's identity, admission, and routing. Matching the hub's visual design is optional.

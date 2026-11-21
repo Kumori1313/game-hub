@@ -13,6 +13,7 @@ export function mountCsWebRoom(container, client) {
         <button class="button" type="button" id="cs-create">Create public lobby</button>
         <button class="secondary" type="button" id="cs-private">Create code-only lobby</button>
       </div>
+      <label class="long-code-option"><input type="checkbox" id="cs-long-code" /> Use a 16-character code</label>
       <form class="code-entry" id="cs-code">
         <label for="cs-code-value">Room code</label>
         <div class="input-line">
@@ -86,6 +87,7 @@ export function mountCsWebRoom(container, client) {
     node('cs-discovery').hidden = !!room;
     node('cs-room').hidden = !room;
     for (const button of container.querySelectorAll('button')) button.disabled = busy;
+    node('cs-long-code').disabled = busy;
     node('cs-members').textContent = room ? room.members
       .map(member => member.display_name + (member.user_id === room.host_id ? ' (host)' : '')).join(' · ') : '';
     node('cs-invite').hidden = !room?.join_code;
@@ -232,7 +234,9 @@ export function mountCsWebRoom(container, client) {
 
   function create(visibility) {
     return perform(async () => {
-      const id = await action('create', null, { p_capacity: 2, p_visibility: visibility });
+      const options = { p_capacity: 2, p_visibility: visibility };
+      if (visibility === 'private' && node('cs-long-code').checked) options.p_long_code = true;
+      const id = await action('create', null, options);
       setRoom(await action('heartbeat', id));
     });
   }

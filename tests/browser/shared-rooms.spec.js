@@ -26,10 +26,15 @@ test('private tic-tac-toe requires a code and rematches preserve the room while 
  const [host,guest,outsider]=await Promise.all(contexts.map(c=>c.newPage()));let held;
  try{
   await enter(host,baseURL,'tic-tac-toe',`Private-${Date.now().toString(36)}`);
+  const longCode = host.getByRole('checkbox', { name: 'Use a 16-character code' });
+  await expect(longCode).toBeHidden();
   await host.locator('#room-visibility').selectOption('private');
+  await expect(longCode).toBeVisible();
+  await expect(longCode).not.toBeChecked();
   await host.getByRole('button',{name:'Create lobby',exact:true}).click();
   await expect(host.locator('#room-code')).toBeVisible();
   const id=new URL(host.url()).searchParams.get('room');const code=(await host.locator('#room-code').textContent()).replace('Room code: ','');
+  expect(code).toMatch(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/);
   await enter(guest,baseURL,'tic-tac-toe','Invited');
   await expect(guest.locator(`[data-lobby-id="${id}"]`)).toHaveCount(0);
   await enter(outsider,baseURL,'tic-tac-toe','Outside');

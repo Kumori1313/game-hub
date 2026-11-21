@@ -13,7 +13,7 @@ The authenticated catalog publishes stable IDs, names, minimum/maximum players, 
 
 ## Room API and authorization
 
-`room_action(p_action, p_lobby, p_connection, p_game, p_capacity, p_visibility, p_code, p_round)` dispatches `create`, `join`, `join_code`, `current`, `snapshot`, `heartbeat`, `leave`, `start`, `rematch`, and `cancel_rematch`. Optional values have explicit defaults. Every private action validates the live Auth session, derives the actor from `auth.uid()`, and checks membership or admission before returning a snapshot. Game and seat limits are enforced server-side.
+`room_action(p_action, p_lobby, p_connection, p_game, p_capacity, p_visibility, p_code, p_round, p_long_code)` dispatches `create`, `join`, `join_code`, `current`, `snapshot`, `heartbeat`, `leave`, `start`, `rematch`, and `cancel_rematch`. Optional values have explicit defaults. Every private action validates the live Auth session, derives the actor from `auth.uid()`, and checks membership or admission before returning a snapshot. Game and seat limits are enforced server-side.
 
 Rows are locked while admitting players, starting games, or consenting to rematches. A per-guest advisory lock prevents concurrent membership in different rooms. Seats have unique room-local numbers; tic-tac-toe marks are independent of seats and host privileges. Poker seats have no X/O mark. An expired waiting guest frees its seat; host departure closes a waiting room. Existing 90-second per-tab leases and trusted cleanup remain authoritative.
 
@@ -21,9 +21,9 @@ Public discovery still exposes only the eight safe summary fields documented in 
 
 ## Code-only rooms
 
-The backend generates a 64-bit random code displayed to admitted members in four-character groups. Codes can be shared by the players; they are bearer invitations, not permanent passwords. Code entry is case-insensitive and ignores spaces/hyphens. The client does not put codes or credentials in URLs, browser storage, or Presence payloads. The code is stored only in the unexposed private room row and returned only after membership authorization.
+New code-only rooms get a random four-character code. The host can select **Use a 16-character code** for a 64-bit invite. Pass `p_long_code: true` on private creation through `room_action` or `create_poker_room`. Both accept the default when the flag is omitted, and existing 16-character invites remain valid. Code entry accepts both lengths and ignores case, spaces, and hyphens. Keep codes and credentials in the private room flow and out of URLs, browser storage, and Presence payloads.
 
-Unknown, closed, full, and wrong-game code attempts return a generic error envelope. Unlike raised exceptions, these replies commit the per-guest request-budget charge, so rejected attempts count too. The UI translates the envelope to a visible error. Standard input/auth failures use errors as before. Existing Auth limits and high-entropy codes complement access checks; distributed abuse is not eliminated. Codes expire with their room; closed/finished rooms do not admit new players.
+Unknown, closed, full, and wrong-game code attempts return a generic error envelope. Each signed-in guest can make up to ten code attempts per minute, including unsuccessful attempts. The UI translates the envelope to a visible error. Closed and finished rooms stop admitting new players.
 
 ## Rematches and stale requests
 

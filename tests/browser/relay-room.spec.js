@@ -22,8 +22,9 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     for (const page of [host,guest]) await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype,'requestPointerLock',{value:undefined}); });
     await Promise.all([enter(host,'Relay host'),enter(guest,'Relay guest'),...(outsider ? [enter(outsider,'Bystander')] : [])]);
     await host.locator('#hub-visibility').selectOption('private');
+    await expect(host.getByRole('checkbox', { name: 'Use a 16-character code' })).not.toBeChecked();
     await host.locator('#hub-create').click();
-    await expect(host.locator('#hub-invite')).toContainText('Room code:');
+    await expect(host.locator('#hub-invite')).toHaveText(/^Room code: [23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/);
     const code = (await host.locator('#hub-invite').innerText()).split(': ')[1];
     const room = new URL(host.url()).searchParams.get('room');
     if (outsider) {

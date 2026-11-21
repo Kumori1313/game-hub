@@ -69,9 +69,12 @@ for (const relay of [false, true]) {
     try {
       await enter(host, 'CS Web Host');
       await enter(guest, 'CS Web Guest');
+      const longCode = host.getByRole('checkbox', { name: 'Use a 16-character code' });
+      await expect(longCode).not.toBeChecked();
+      if (relay) await longCode.check();
       await host.getByRole('button', { name: 'Create code-only lobby' }).click();
       const invite = host.locator('#cs-invite');
-      await expect(invite).toBeVisible();
+      await expect(invite).toHaveText(relay ? /^Room code: [0-9A-F]{16}$/ : /^Room code: [23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/);
       await guest.getByLabel('Room code').fill((await invite.textContent()).replace('Room code: ', ''));
       await guest.getByRole('button', { name: 'Join with code' }).click();
       await expect(host.getByRole('button', { name: 'Start match' })).toBeEnabled({ timeout: 15000 });

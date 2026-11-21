@@ -44,13 +44,13 @@ try {
  console.log('PASS: 2–6 seat capacity validation, six-way joins, bounded smaller rooms, seat reuse, and host-only poker start.');
 
  id=await call(host,'create',null,{p_capacity:3,p_visibility:'private'});
- state=await call(host,'snapshot',id);const code=state.join_code;assert.match(code,/^[A-F0-9]{16}$/);
+ state=await call(host,'snapshot',id);const code=state.join_code;assert.match(code,/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/);
  const publicRows=await outsider.client.from('lobby_summaries').select('*').eq('id',id);assert.ifError(publicRows.error);assert.deepEqual(publicRows.data,[]);
  await denied(outsider,'snapshot',id);await denied(outsider,'join',id);await denied(outsider,'join',id,{p_code:code});
  const before=Number(sql(`select request_count from game_private.request_buckets where user_id='${outsider.id}'`));
  for(const bad of ['not-a-code','0000000000000000',code+'too-long']) await denied(outsider,'join_code',null,{p_code:bad});
  const after=Number(sql(`select request_count from game_private.request_buckets where user_id='${outsider.id}'`));assert.equal(after-before,3);
- await call(outsider,'join_code',null,{p_code:code.toLowerCase().match(/.{1,4}/g).join('-')});
+ await call(outsider,'join_code',null,{p_code:' '+code.slice(0,2).toLowerCase()+'-'+code.slice(2).toLowerCase()+' '});
  await call(outsider,'join_code',null,{p_code:code}); // repeat admission is idempotent
  assert.equal((await call(outsider,'snapshot',id)).join_code,code);
  const wrongGame={...members[0],game:'tic-tac-toe'};
@@ -59,7 +59,21 @@ try {
  assert.equal(sql("select has_table_privilege('authenticated','game_private.rematch_votes','select')"),'f');
  assert.equal(sql("select has_function_privilege('authenticated','game_private.room_snapshot(uuid)','execute')"),'f');
  await leaveAll();
- console.log('PASS: private discovery/read/join isolation, normalized codes, cross-game rejection, persistent failed-code budgets, and private grants.');
+ const {data:longRoom,error:longError}=await host.client.rpc('create_poker_room',{
+  p_capacity:2,p_visibility:'private',p_connection:host.connection,p_long_code:true,p_settings:{starting_chips:1500},
+ });
+ assert.ifError(longError);
+ const longTable=await call(host,'snapshot',longRoom);
+ assert.match(longTable.join_code,/^[0-9A-F]{16}$/);
+ assert.equal(longTable.settings.starting_chips,1500);
+ const formatted=longTable.join_code.toLowerCase().match(/.{4}/g).join('-');
+ sql(`update game_private.request_buckets set code_window_start=date_trunc('minute',clock_timestamp()),code_attempts=9 where user_id='${outsider.id}'`);
+ assert.equal((await denied(outsider,'join_code',null,{p_code:'invalid-code'})).data?.code,'ROOM_UNAVAILABLE');
+ assert.equal((await denied(outsider,'join_code',null,{p_code:formatted})).data?.code,'RATE_LIMITED');
+ sql(`update game_private.request_buckets set code_window_start='-infinity' where user_id='${outsider.id}'`);
+ assert.equal((await call(outsider,'join_code',null,{p_code:formatted})).id,longRoom);
+ await leaveAll();
+ console.log('PASS: short and long codes, case-insensitive entry, private-room isolation, cross-game rejection, and persistent code-attempt limits.');
 
  host.game='tic-tac-toe';const other=members[0];other.game='tic-tac-toe';
  await denied(host,'create',null,{p_capacity:3});

@@ -7,8 +7,14 @@ test('custom rules persist, are shared before play, and permit a voluntary betwe
  try{
   await enter(host,baseURL,`Rules-${Date.now().toString(36)}`);await host.locator('#poker-settings summary').click();await expect(host.locator('#starting-chips')).toHaveValue('1000');await expect(host.locator('#table-blinds')).toHaveValue('20');await expect(host.locator('#turn-seconds')).toHaveValue('30');await expect(host.locator('#rebuy-limit')).toHaveValue('0');
   await host.locator('#room-capacity').selectOption('2');await host.locator('#starting-chips').fill('2000');await host.locator('#table-blinds').selectOption('50');await host.locator('#turn-seconds').selectOption('45');await host.locator('#rebuy-limit').selectOption('1');
-  await host.reload();await expect(host.locator('#create-lobby')).toBeEnabled();await expect(host.locator('#starting-chips')).toHaveValue('2000');await expect(host.locator('#room-capacity')).toHaveValue('2');await host.locator('#room-visibility').selectOption('private');await host.locator('#create-lobby').click();await expect(host.locator('#room-message')).toContainText('2,000 play chips · 25/50 blinds · 45-second turns · 1 rebuy/player · Rules locked');
-  const code=(await host.locator('#room-code').textContent()).replace('Room code: ','');await enter(guest,baseURL,'Rules guest');await guest.locator('#room-code-input').fill(code);await guest.locator('#join-code').click();await expect(guest.locator('#room-message')).toContainText('2,000 play chips · 25/50 blinds · 45-second turns');await guest.reload();await expect(guest.locator('#room-message')).toContainText('Rules locked');
+  await host.reload();await expect(host.locator('#create-lobby')).toBeEnabled();await expect(host.locator('#starting-chips')).toHaveValue('2000');await expect(host.locator('#room-capacity')).toHaveValue('2');await host.locator('#room-visibility').selectOption('private');
+  const longCode = host.getByRole('checkbox', { name: 'Use a 16-character code' });
+  await expect(longCode).not.toBeChecked();
+  await longCode.check();
+  await host.locator('#create-lobby').click();await expect(host.locator('#room-message')).toContainText('2,000 play chips · 25/50 blinds · 45-second turns · 1 rebuy/player · Rules locked');
+  const code=(await host.locator('#room-code').textContent()).replace('Room code: ','');
+  expect(code).toMatch(/^[0-9A-F]{4}(?:-[0-9A-F]{4}){3}$/);
+  await enter(guest,baseURL,'Rules guest');await guest.locator('#room-code-input').fill(code);await guest.locator('#join-code').click();await expect(guest.locator('#room-message')).toContainText('2,000 play chips · 25/50 blinds · 45-second turns');await guest.reload();await expect(guest.locator('#room-message')).toContainText('Rules locked');
   await expect(host.locator('#start-game')).toBeEnabled();await host.locator('#start-game').click();for(const p of pages){await expect(p.locator('#game-table')).toBeVisible();await expect(p.locator('#poker-rules')).toContainText('25/50 blinds · 45s');await expect(p.locator('#poker-pot')).toHaveText('Pot: 75');await expect(p.locator('#poker-rebuy')).toBeHidden();}
   let rebuyer;
   for(let hand=0;hand<6&&!rebuyer;hand++){

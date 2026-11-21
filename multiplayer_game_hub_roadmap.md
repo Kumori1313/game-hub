@@ -112,6 +112,7 @@ Security is part of the first playable release, not an optional later addition.
 
 - [x] Define and version the shared catalog, identity, seat, lobby, and round contract before adding a second game.
 - [x] Add public and code-only rooms with backend-validated entry; keep private rooms out of discovery.
+- [x] Default code-only rooms to four-character invites, with a host option for a 16-character code. Verify both invite lengths across the game clients and limit repeated code attempts.
 - [x] Support game-specific player limits and host-selected capacity. Keep tic-tac-toe at two seats and verify poker lobby capacity from two to six.
 - [x] Keep completed players in the room and require both to accept a tic-tac-toe rematch. Reject stale requests from previous rounds.
 - [x] Randomly assign X for the first game and swap marks on rematches; host permissions remain independent of marks.

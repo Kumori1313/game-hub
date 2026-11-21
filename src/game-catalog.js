@@ -28,6 +28,15 @@ const games = [
     details: ['2 players', 'Co-op horror'],
     devPort: 5176,
   },
+  {
+    slug: 'cs-web',
+    title: 'Counter-Attack Web',
+    titleId: 'cs-web-title',
+    linkId: 'cs-web-link',
+    linkLabel: 'Open Counter-Attack Web lobbies',
+    details: ['2 players', 'Hosted by a player', 'Vortezler'],
+    launchPath: '/game-hub/?game=cs-web',
+  },
 ];
 
 function element(tag, className, text) {
@@ -40,6 +49,7 @@ function element(tag, className, text) {
 export function mountGameCatalog(container, { dev = false } = {}) {
   for (const [index, game] of games.entries()) {
     if (game.slug === 'relay-room' && import.meta.env.VITE_ENABLE_RELAY_ROOM !== 'true') continue;
+    if (game.slug === 'cs-web' && import.meta.env.VITE_ENABLE_CS_WEB !== 'true') continue;
     const first = index === 0;
     const card = first ? container : element('div', 'catalog-extra');
     const title = element('h2', '', game.title);
@@ -62,7 +72,7 @@ export function mountGameCatalog(container, { dev = false } = {}) {
     details.append(...game.details.map(detail => element('span', '', detail)));
     const link = element('a', 'button', game.linkLabel + ' ');
     const path = '/' + game.slug + '/';
-    link.href = dev && game.slug !== 'relay-room' ? 'http://127.0.0.1:' + game.devPort + path : path;
+    link.href = game.launchPath ?? (dev && game.slug !== 'relay-room' ? 'http://127.0.0.1:' + game.devPort + path : path);
     link.id = game.linkId;
     const arrow = element('span', '', '→');
     arrow.setAttribute('aria-hidden', 'true');

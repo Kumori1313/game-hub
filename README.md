@@ -101,3 +101,7 @@ Run `npm run test:settings` locally for configurable poker and rebuy coverage. A
 ## Relay Room
 
 Two guests can play the co-op flashlight prototype through the shared lobby system. See [Relay Room setup and playtest](docs/relay-room.md) for the local migration, same-origin launch commands, and release settings.
+
+## Counter-Attack Web
+
+Open **Counter-Attack Web lobbies** to host or join a two-player match on the game owner’s site. See [Counter-Attack Web integration](docs/cs-web.md) for connection behavior and local tests.

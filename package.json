@@ -21,7 +21,8 @@
     "test:bots": "node --env-file=.env.local scripts/test-bots.mjs",
     "test:settings": "node --env-file=.env.local scripts/test-settings.mjs",
     "dev:relay": "node --env-file=.env.local --experimental-strip-types scripts/serve-session-test.mjs",
-    "test:relay": "node --env-file=.env.local node_modules/@playwright/test/cli.js test relay-room.spec.js"
+    "test:relay": "node --env-file=.env.local node_modules/@playwright/test/cli.js test relay-room.spec.js",
+    "test:cs-web": "node --env-file=.env.local scripts/test-cs-web.mjs"
   },
   "repository": {
     "type": "git",

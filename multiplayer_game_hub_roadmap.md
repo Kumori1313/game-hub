@@ -147,7 +147,9 @@ Platform expansion and additional games are the next priority. Further poker var
 - [x] Generalize hub navigation so new games can be listed through reviewed entries in `src/game-catalog.js`. Verify the existing development and production routes.
 - [x] Generalize game-specific room dispatch through private backend adapters. Verify existing room behavior and snapshot compatibility locally.
 - [ ] Add and verify another game using the development guide, including guest entry, admission, complete gameplay, recovery, and return to the hub.
-- [ ] Support games maintained by other users or organizations; distinguish external links from shared platform integration.
+- [x] Integrate a game deployed by another owner. [Counter-Attack Web](docs/cs-web.md) keeps its original Pages origin and uses Game Hub lobbies with a browser-hosted match.
+- [x] Verify Counter-Attack Web's cross-origin launch without exporting Game Hub credentials. Live Chromium checks passed for code admission, peer connection, guest recovery, and return to the hub.
+- [ ] Label standalone external links separately from games that use Game Hub lobbies.
 - [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.
 - [ ] Extract shared code after the lobby contract is verified. Define supported client versions, migrations, and compatibility errors.
 - [ ] Revisit host transfer, spectator mode, moderation, private game state, stronger anti-cheat, and scaling based on feedback.

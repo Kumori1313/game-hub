@@ -217,3 +217,27 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#hub-select')).toBeVisible({timeout:30000});
   } finally { await Promise.all(contexts.map(c => c.close())); }
 });
+
+test('one guest plays a local solo shift, refreshes, and leaves', async ({page,baseURL}) => {
+  const published = process.env.RELAY_RELEASE_SMOKE === 'true';
+  test.skip(!published && process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires Relay Room');
+  await page.goto(baseURL+'/relay-room/');
+  const solo = page.getByRole('link',{name:'Play solo'});
+  await expect(solo).toBeVisible();
+  const sockets = [];
+  page.on('websocket',socket => sockets.push(socket.url()));
+  await solo.click();
+  await expect(page.locator('#connection')).toHaveText('Solo operator');
+  await expect(page.locator('#enter')).toBeEnabled();
+  await page.locator('#enter').click();
+  await page.keyboard.press('e');
+  await expect(page.locator('#action')).toContainText('Drop flashlight');
+  await page.reload();
+  await page.locator('#enter').click();
+  await expect(page.locator('#action')).toContainText('Drop flashlight');
+  await expect(page.locator('#debug,#orders')).toHaveCount(0);
+  expect(sockets).toHaveLength(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button',{name:'Leave solo'}).click();
+  await expect(solo).toBeVisible();
+});

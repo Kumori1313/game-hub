@@ -1,33 +1,39 @@
 import { test, expect } from '@playwright/test';
 
 test('two hub guests play Relay Room, leave, and start a new room', async ({browser,baseURL}) => {
-  test.skip(process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room runtime');
+  const published = process.env.RELAY_RELEASE_SMOKE === 'true';
+  if (published && baseURL !== 'https://kumori1313.github.io') throw Error('Use the trusted Pages origin for the release smoke test.');
+  test.skip(!published && process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room runtime');
   test.setTimeout(240000);
-  const contexts = await Promise.all([0,1,2].map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
+  const contexts = await Promise.all((published ? [0,1] : [0,1,2]).map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
   const [host,guest,outsider] = await Promise.all(contexts.map(c => c.newPage()));
-  for (const page of [host,guest,outsider]) page.setDefaultTimeout(12000);
+  for (const page of [host,guest,...(outsider ? [outsider] : [])]) page.setDefaultTimeout(12000);
   async function enter(page,name) {
     await page.goto(baseURL+'/game-hub/');
     await page.getByLabel('Display name',{exact:true}).fill(name);
     await page.getByRole('button',{name:'Continue',exact:true}).click();
-    await page.locator('#relay-room-link').click();
+    await expect(page.locator('#identity')).toContainText(name);
+    if (published) await page.goto(baseURL+'/relay-room/');
+    else await page.locator('#relay-room-link').click();
     await expect(page.locator('#hub-info')).toHaveText('Signed in as '+name);
   }
   try {
     // Exercise keyboard-only look so synthetic headless pointer warps cannot turn the operator at spawn.
     for (const page of [host,guest]) await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype,'requestPointerLock',{value:undefined}); });
-    await Promise.all([enter(host,'Relay host'),enter(guest,'Relay guest'),enter(outsider,'Bystander')]);
+    await Promise.all([enter(host,'Relay host'),enter(guest,'Relay guest'),...(outsider ? [enter(outsider,'Bystander')] : [])]);
     await host.locator('#hub-visibility').selectOption('private');
     await host.locator('#hub-create').click();
     await expect(host.locator('#hub-invite')).toContainText('Room code:');
     const code = (await host.locator('#hub-invite').innerText()).split(': ')[1];
     const room = new URL(host.url()).searchParams.get('room');
-    await outsider.goto(baseURL+'/relay-room/?lobby='+room);
-    await expect(outsider.locator('#hub-error')).toContainText('not a member');
-    await expect(outsider.locator('#hub-public')).not.toContainText('Relay host');
-    await outsider.locator('#hub-code').fill('bad');
-    await outsider.getByRole('button',{name:'Join with code'}).click();
-    await expect(outsider.locator('#hub-error')).toContainText('unavailable');
+    if (outsider) {
+      await outsider.goto(baseURL+'/relay-room/?lobby='+room);
+      await expect(outsider.locator('#hub-error')).toContainText('not a member');
+      await expect(outsider.locator('#hub-public')).not.toContainText('Relay host');
+      await outsider.locator('#hub-code').fill('bad');
+      await outsider.getByRole('button',{name:'Join with code'}).click();
+      await expect(outsider.locator('#hub-error')).toContainText('unavailable');
+    }
     await guest.locator('#hub-code').fill(code);
     await guest.getByRole('button',{name:'Join with code'}).click();
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
@@ -49,16 +55,18 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#enter')).toBeEnabled();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(guest.url()).searchParams.get('lobby')).toBe(room);
-    // A valid outsider guest cannot open the known live lobby, even with its ID.
-    const denied = await outsider.evaluate(id => new Promise((resolve,reject) => {
-      const ws = new WebSocket('ws://'+location.host+'/relay-room/live');
-      ws.onopen = () => ws.send(JSON.stringify({type:'join',ticket:null,admission:{
-        lobby:id,round:1,token:JSON.parse(localStorage.getItem('game-hub-auth')).access_token,
-      }}));
-      ws.onmessage = () => { ws.close(); reject(Error('Outsider received live data')); };
-      ws.onclose = e => resolve(e.code);
-    }),room);
-    expect(denied).toBe(1008);
+    if (outsider) {
+      // A valid outsider guest cannot open the known live lobby, even with its ID.
+      const denied = await outsider.evaluate(id => new Promise((resolve,reject) => {
+        const ws = new WebSocket('ws://'+location.host+'/relay-room/live');
+        ws.onopen = () => ws.send(JSON.stringify({type:'join',ticket:null,admission:{
+          lobby:id,round:1,token:JSON.parse(localStorage.getItem('game-hub-auth')).access_token,
+        }}));
+        ws.onmessage = () => { ws.close(); reject(Error('Outsider received live data')); };
+        ws.onclose = e => resolve(e.code);
+      }),room);
+      expect(denied).toBe(1008);
+    }
     await host.locator('#enter').click();
     await guest.locator('#debug').click();
     await host.keyboard.press('e');
@@ -171,9 +179,18 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#hub-select')).toBeVisible({timeout:10000});
     await guest.locator('#hub-back').click();
     await expect(guest).toHaveURL(/\/game-hub\//);
-    await guest.locator('#relay-room-link').click();
-    await guest.locator('#hub-create').click();
-    await host.getByRole('button',{name:/Join Relay guest/}).click({timeout:10000});
+    if (published) {
+      await guest.goto(baseURL+'/relay-room/');
+      await guest.locator('#hub-visibility').selectOption('private');
+      await guest.locator('#hub-create').click();
+      await expect(guest.locator('#hub-invite')).toContainText('Room code:');
+      await host.locator('#hub-code').fill((await guest.locator('#hub-invite').innerText()).split(': ')[1]);
+      await host.getByRole('button',{name:'Join with code'}).click();
+    } else {
+      await guest.locator('#relay-room-link').click();
+      await guest.locator('#hub-create').click();
+      await host.getByRole('button',{name:/Join Relay guest/}).click({timeout:10000});
+    }
     await guest.locator('#hub-start').click();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);

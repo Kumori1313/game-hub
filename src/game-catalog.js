@@ -25,7 +25,7 @@ const games = [
     titleId: 'relay-room-title',
     linkId: 'relay-room-link',
     linkLabel: 'Open Relay Room',
-    details: ['2 players', 'Co-op flashlight prototype'],
+    details: ['2 players', 'Co-op horror'],
     devPort: 5176,
   },
 ];

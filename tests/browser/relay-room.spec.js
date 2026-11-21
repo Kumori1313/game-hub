@@ -65,13 +65,20 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await duplicate.goto(host.url());
     await expect(duplicate.locator('#connection')).toContainText('Already playing in another tab');
     await duplicate.close();
-    await guest.locator('#debug').click();
-    await guest.locator('#outage').click();
+    for (const page of [host,guest]) {
+      await page.keyboard.press('g');
+      await expect(page.locator('#debug,#layout-map,#outage,#diagnostics,#stats,#orders,#brief-instructions')).toHaveCount(0);
+    }
+    const guestUrl = guest.url();
+    await guest.goto('about:blank');
     await expect(host.locator('#connection')).toContainText('1/2 online');
+    await guest.goto(guestUrl);
+    await expect(guest.locator('#connection')).toContainText('2/2 online');
     await expect(host.locator('#connection')).toContainText('2/2 online');
     await host.locator('#enter').click();
     await host.keyboard.press('e');
-    await expect(guest.locator('#stats')).toContainText('P1 · on');
+    await expect.poll(() => states.get(guest)?.lamp.owner).toBe(1);
+    expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
     expect(plan.version).toBe(2);
@@ -82,15 +89,13 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     finally { await host.keyboard.up('w'); }
     await host.keyboard.press('r');
     const entranceDoor = plan.passages.find(p => p.a === 'bay-0').id;
-    await expect(guest.locator('#stats')).toContainText('Open doors  '+entranceDoor);
+    await expect.poll(() => states.get(guest)?.opened).toContain(entranceDoor);
     await host.reload();
     await expect(host.locator('#connection')).toContainText('2/2 online');
-    await host.locator('#debug').click();
-    await expect(host.locator('#stats')).toContainText('P1 · on');
+    await expect.poll(() => states.get(host)?.lamp.owner).toBe(1);
     expect(plans.get(host).at(-1)).toEqual(plan);
     await expect.poll(() => plans.get(host).length).toBeGreaterThan(1);
-    await expect(host.locator('#stats')).toContainText('Open doors  '+entranceDoor);
-    await expect(host.locator('#layout-map')).toBeVisible();
+    expect(states.get(host).opened).toContain(entranceDoor);
     await host.screenshot({path:'/tmp/relay-hub-live.png'});
     await guest.locator('#settings').tap();
     await guest.getByLabel('Reduce camera motion').check();
@@ -103,7 +108,6 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#volume')).toHaveValue('0');
     await guest.getByRole('button',{name:'Done',exact:true}).tap();
     // Walk the generated aisles with normal controls and operate the paired floor pads.
-    await host.locator('#debug').click();
     await host.locator('#enter').click();
     await guest.locator('#enter').tap();
     const bays = new Map(plan.rooms.map(r => [r.id,r]));
@@ -155,11 +159,6 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#operate').tap();
     await expect(host.locator('#warning')).toContainText('Knocking above');
     await guest.screenshot({path:'/tmp/relay-shift-mobile.png'});
-    await guest.locator('#debug').tap();
-    await expect(guest.locator('#stats')).toContainText('Frame p95');
-    const stats = await guest.locator('#stats').innerText();
-    console.log('Touch viewport ('+browser.version()+', '+plan.callout+')',stats.split('\n').filter(line => /Frame p95|Scene ready|RX\/TX/.test(line)).join(' | '));
-    await guest.locator('#debug').tap();
     await expect(host.locator('#warning')).toContainText('You are down',{timeout:10000});
     await host.reload();
     await expect(host.locator('#enter')).toBeEnabled();
@@ -173,7 +172,16 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await Promise.all([travel(host,relay,exit),travel(guest,relay,exit)]);
     await expect(guest.locator('#action')).toContainText('Extract crew');
     await guest.locator('#operate').tap();
-    for (const page of [host,guest]) await expect(page.locator('#result-title')).toHaveText('Crew extracted');
+    for (const page of [host,guest]) {
+      await expect(page.locator('#result-title')).toHaveText('Crew extracted');
+      const reference = await page.locator('#report-reference').inputValue();
+      expect(reference).toMatch(/^Build (?:local|[0-9a-f]{12}) · Layout v[0-9]+ · Seed [0-9]+$/);
+      expect(reference).toContain('Layout v'+plan.version+' · Seed '+plan.seed);
+    }
+    await contexts[0].grantPermissions(['clipboard-read','clipboard-write']);
+    await host.getByRole('button',{name:'Copy reference'}).click();
+    await expect(host.locator('#copy-reference')).toHaveText('Copied');
+    expect(await host.evaluate(() => navigator.clipboard.readText())).toBe(await host.locator('#report-reference').inputValue());
     await host.screenshot({path:'/tmp/relay-shift-result.png'});
     await host.locator('#replay').click();
     await expect(host.locator('#hub-select')).toBeVisible();

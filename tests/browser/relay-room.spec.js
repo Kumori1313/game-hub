@@ -5,6 +5,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
   test.setTimeout(240000);
   const contexts = await Promise.all([0,1,2].map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
   const [host,guest,outsider] = await Promise.all(contexts.map(c => c.newPage()));
+  for (const page of [host,guest,outsider]) page.setDefaultTimeout(12000);
   async function enter(page,name) {
     await page.goto(baseURL+'/game-hub/');
     await page.getByLabel('Display name',{exact:true}).fill(name);
@@ -64,7 +65,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#stats')).toContainText('P1 · on');
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(1);
+    expect(plan.version).toBe(2);
     expect(plans.get(guest)[0]).toEqual(plan);
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
@@ -82,9 +83,18 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#stats')).toContainText('Open doors  '+entranceDoor);
     await expect(host.locator('#layout-map')).toBeVisible();
     await host.screenshot({path:'/tmp/relay-hub-live.png'});
+    await guest.locator('#settings').tap();
+    await guest.getByLabel('Reduce camera motion').check();
+    await guest.locator('#volume').press('Home');
+    await guest.getByRole('button',{name:'Done',exact:true}).tap();
+    await guest.reload();
+    await expect(guest.locator('#enter')).toBeEnabled();
+    await guest.locator('#settings').tap();
+    await expect(guest.getByLabel('Reduce camera motion')).toBeChecked();
+    await expect(guest.locator('#volume')).toHaveValue('0');
+    await guest.getByRole('button',{name:'Done',exact:true}).tap();
     // Walk the generated aisles with normal controls and operate the paired floor pads.
     await host.locator('#debug').click();
-    await guest.locator('#debug').click();
     await host.locator('#enter').click();
     await guest.locator('#enter').tap();
     const bays = new Map(plan.rooms.map(r => [r.id,r]));
@@ -112,8 +122,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
       try {
         await expect.poll(async () => {
           const hint = await page.locator('#action').textContent();
-          if (hint.includes('Open bulkhead')) await page.keyboard.press('r');
-          if (hint.includes('Bulkhead within reach')) await page.locator('#open-door').tap();
+          if (/Open bulkhead|Bulkhead within reach/.test(hint)) await page.keyboard.press('r');
           return direction*(to-coordinate());
         },{intervals:[90],timeout:11000,message:'Walking '+axis+' to '+to}).toBeLessThan(0.25);
       } finally { await page.keyboard.up(key); }
@@ -124,7 +133,12 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         await walk(page,'z',bay.z);
       }
     }
-    await travel(guest,intake,intake);
+    const receiver = plan.callout === 'black-start' ? plan.rooms.find(r => r.kind === 'switchboard') : intake;
+    await travel(guest,intake,receiver);
+    if (plan.callout === 'black-start') {
+      await expect(guest.locator('#operate')).toHaveText('Charge switchboard');
+      await guest.locator('#operate').tap();
+    }
     await travel(host,intake,relay);
     await expect(host.locator('#action')).toContainText('Send test tone');
     await host.keyboard.press('q');
@@ -132,12 +146,17 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#operate').tap();
     await expect(host.locator('#warning')).toContainText('Knocking above');
     await guest.screenshot({path:'/tmp/relay-shift-mobile.png'});
+    await guest.locator('#debug').tap();
+    await expect(guest.locator('#stats')).toContainText('Frame p95');
+    const stats = await guest.locator('#stats').innerText();
+    console.log('Touch viewport ('+browser.version()+', '+plan.callout+')',stats.split('\n').filter(line => /Frame p95|Scene ready|RX\/TX/.test(line)).join(' | '));
+    await guest.locator('#debug').tap();
     await expect(host.locator('#warning')).toContainText('You are down',{timeout:10000});
     await host.reload();
     await expect(host.locator('#enter')).toBeEnabled();
     await host.locator('#enter').click();
     await expect(host.locator('#warning')).toContainText('You are down');
-    await travel(guest,intake,relay);
+    await travel(guest,receiver,relay);
     await expect(guest.locator('#action')).toContainText('Revive partner');
     await guest.locator('#operate').tap();
     await expect(host.locator('#warning')).not.toContainText('You are down');
@@ -158,9 +177,10 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('#hub-start').click();
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);
-    await expect.poll(() => states.get(host)?.mission?.stage).toBe('trace');
+    await expect.poll(() => states.get(host)?.mission?.stage).toBe(plans.get(host).at(-1).callout === 'black-start' ? 'prime' : 'trace');
     // A forced seed deliberately repeats across lobbies; the protocol round is always fresh.
     expect(states.get(host).round).not.toBe(firstRound);
     await guest.locator('#live-leave').click();
+    await expect(host.locator('#hub-select')).toBeVisible({timeout:12000});
   } finally { await Promise.all(contexts.map(c => c.close())); }
 });

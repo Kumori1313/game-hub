@@ -1,10 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+// The game's own planner turns its multi-storey floor plan into axis-aligned walking legs.
+const game = resolve(process.env.RELAY_SITE_DIR ?? '../Horror-Friendslop');
+const load = file => import(pathToFileURL(game+'/src/'+file).href);
 
 test('two hub guests play Relay Room, leave, and start a new room', async ({browser,baseURL}) => {
   const published = process.env.RELAY_RELEASE_SMOKE === 'true';
   if (published && baseURL !== 'https://kumori1313.github.io') throw Error('Use the trusted Pages origin for the release smoke test.');
   test.skip(!published && process.env.VITE_ENABLE_RELAY_ROOM !== 'true','Requires the configured local Relay Room game');
-  test.setTimeout(240000);
+  // Two-storey facilities take several minutes to cross with keyboard walking.
+  test.setTimeout(420000);
   const contexts = await Promise.all((published ? [0,1] : [0,1,2]).map(i => browser.newContext(i === 1 ? {viewport:{width:390,height:844},hasTouch:true,isMobile:true} : {viewport:{width:980,height:690}})));
   const [host,guest,outsider] = await Promise.all(contexts.map(c => c.newPage()));
   for (const page of [host,guest,...(outsider ? [outsider] : [])]) page.setDefaultTimeout(12000);
@@ -81,14 +88,14 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(2);
+    expect(plan.version).toBe(3);
     expect(plans.get(guest)[0]).toEqual(plan);
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
     try { await expect(host.locator('#action')).toContainText('Open bulkhead',{timeout:10000}); }
     finally { await host.keyboard.up('w'); }
     await host.keyboard.press('r');
-    const entranceDoor = plan.passages.find(p => p.a === 'bay-0').id;
+    const entranceDoor = plan.passages.find(p => p.bulkhead && (p.a === 'intake' || p.b === 'intake')).id;
     await expect.poll(() => states.get(guest)?.opened).toContain(entranceDoor);
     await host.reload();
     await expect(host.locator('#connection')).toContainText('2/2 online');
@@ -107,52 +114,50 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.getByLabel('Reduce camera motion')).toBeChecked();
     await expect(guest.locator('#volume')).toHaveValue('0');
     await guest.getByRole('button',{name:'Done',exact:true}).tap();
-    // Walk the generated aisles with normal controls and operate the paired floor pads.
+    // Walk the generated corridors and stairs with normal controls and operate the paired floor pads.
     await host.locator('#enter').click();
     await guest.locator('#enter').tap();
+    const [{route},{anchor}] = await Promise.all([load('route.ts'),load('layout.ts')]);
     const bays = new Map(plan.rooms.map(r => [r.id,r]));
     const intake = plan.rooms.find(r => r.kind === 'intake');
     const relay = bays.get(plan.objectiveId), exit = bays.get(plan.exitId);
-    function path(from,to) {
-      const queue = [[from]];
-      const seen = new Set([from]);
-      for (const chain of queue) {
-        const bay = chain.at(-1);
-        if (bay === to) return chain;
-        for (const edge of plan.passages) {
-          const next = edge.a === bay.id ? bays.get(edge.b) : edge.b === bay.id ? bays.get(edge.a) : null;
-          if (next && !seen.has(next)) { seen.add(next); queue.push([...chain,next]); }
-        }
-      }
-      throw Error('Disconnected facility');
-    }
+    // Hold the key for a little less than the distance needs, wait for the
+    // host's snapshot, then settle with short taps. Snapshots lag the keys, so
+    // walking until the reported position passes the target would overshoot.
+    // A guest samples its keys every 100 ms, so a tap lasts at least 150 ms;
+    // routes keep 0.85 m of clearance, which absorbs the 0.4 m tolerance.
+    const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
     async function walk(page,axis,to) {
-      const coordinate = () => states.get(page).players.find(p => p.id === (page === host ? 1 : 2))[axis];
-      const direction = Math.sign(to-coordinate());
-      if (Math.abs(to-coordinate()) < 0.35) return;
-      const key = axis === 'x' ? (direction > 0 ? 'd' : 'a') : (direction > 0 ? 's' : 'w');
-      await page.keyboard.down(key);
-      try {
-        await expect.poll(async () => {
-          const hint = await page.locator('#action').textContent();
-          if (/Open bulkhead|Bulkhead within reach/.test(hint)) await page.keyboard.press('r');
-          return direction*(to-coordinate());
-        },{intervals:[90],timeout:11000,message:'Walking '+axis+' to '+to}).toBeLessThan(0.25);
-      } finally { await page.keyboard.up(key); }
+      const coordinate = () => self(page)[axis];
+      for (let pulse=0; pulse<40; pulse++) {
+        if (states.get(page).mission?.down.some(d => d.id === self(page).id)) throw Error('Operator down while walking');
+        const remaining = to-coordinate();
+        if (Math.abs(remaining) < 0.4) return;
+        const key = axis === 'x' ? (remaining > 0 ? 'd' : 'a') : (remaining > 0 ? 's' : 'w');
+        await page.keyboard.down(key);
+        try { await page.waitForTimeout(Math.max(150,Math.min(3000,Math.abs(remaining)/3.3*1000-120))); }
+        finally { await page.keyboard.up(key); }
+        await page.waitForTimeout(220);
+        if (/Open bulkhead|Bulkhead within reach/.test(await page.locator('#action').textContent())) await page.keyboard.press('r');
+      }
+      throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate());
     }
-    async function travel(page,from,to) {
-      for (const bay of path(from,to)) {
-        await walk(page,'x',bay.x);
-        await walk(page,'z',bay.z);
+    async function travel(page,to) {
+      const p = self(page);
+      const legs = route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},to.kind ? anchor(to) : to);
+      if (!legs) throw Error('No walking route to '+(to.id ?? JSON.stringify(to)));
+      for (const leg of legs) {
+        await walk(page,'x',leg.x);
+        await walk(page,'z',leg.z);
       }
     }
     const receiver = plan.callout === 'black-start' ? plan.rooms.find(r => r.kind === 'switchboard') : intake;
-    await travel(guest,intake,receiver);
+    await travel(guest,receiver);
     if (plan.callout === 'black-start') {
       await expect(guest.locator('#operate')).toHaveText('Charge switchboard');
       await guest.locator('#operate').tap();
     }
-    await travel(host,intake,relay);
+    await travel(host,relay);
     await expect(host.locator('#action')).toContainText('Send test tone');
     await host.keyboard.press('q');
     await expect(guest.locator('#action')).toContainText('Answer relay');
@@ -164,12 +169,26 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#enter')).toBeEnabled();
     await host.locator('#enter').click();
     await expect(host.locator('#warning')).toContainText('You are down');
-    await travel(guest,receiver,relay);
+    await travel(guest,relay);
     await expect(guest.locator('#action')).toContainText('Revive partner');
     await guest.locator('#operate').tap();
     await expect(host.locator('#warning')).not.toContainText('You are down');
-    // Travel together between strikes and extract as soon as both arrive.
-    await Promise.all([travel(host,relay,exit),travel(guest,relay,exit)]);
+    // Travel together and extract as soon as both arrive. The walk to the exit
+    // is long enough for another strike: the standing operator walks back,
+    // revives their partner, and both carry on.
+    for (let attempt=0; ; attempt++) {
+      const trips = await Promise.allSettled([travel(host,exit),travel(guest,exit)]);
+      if (trips.every(t => t.status === 'fulfilled')) break;
+      const down = states.get(host).mission.down.map(d => d.id);
+      if (attempt >= 3 || down.length !== 1) throw trips.find(t => t.status === 'rejected').reason;
+      const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
+      const at = self(fallen);
+      await travel(rescuer,{x:at.x,y:at.feetY ?? 0,z:at.z});
+      await expect(rescuer.locator('#action')).toContainText('Revive partner');
+      if (rescuer === guest) await guest.locator('#operate').tap();
+      else await host.keyboard.press('q');
+      await expect.poll(() => states.get(host).mission.down.length).toBe(0);
+    }
     await expect(guest.locator('#action')).toContainText('Extract crew');
     await guest.locator('#operate').tap();
     for (const page of [host,guest]) {

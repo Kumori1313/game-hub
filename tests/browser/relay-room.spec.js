@@ -140,11 +140,12 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         await page.waitForTimeout(220);
         if (/Open bulkhead|Bulkhead within reach/.test(await page.locator('#action').textContent())) await page.keyboard.press('r');
       }
-      throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate());
+      throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate()+' on seed '+plan.seed);
     }
-    async function travel(page,to) {
+    // Reviving only needs to be within 1.7 m, so a rescuer may stop short.
+    async function travel(page,to,near = 0) {
       const p = self(page);
-      const legs = route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},to.kind ? anchor(to) : to);
+      const legs = route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},to.kind ? anchor(to) : to,undefined,near);
       if (!legs) throw Error('No walking route to '+(to.id ?? JSON.stringify(to)));
       for (const leg of legs) {
         await walk(page,'x',leg.x);
@@ -183,7 +184,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
       if (attempt >= 3 || down.length !== 1) throw trips.find(t => t.status === 'rejected').reason;
       const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
       const at = self(fallen);
-      await travel(rescuer,{x:at.x,y:at.feetY ?? 0,z:at.z});
+      await travel(rescuer,{x:at.x,y:at.feetY ?? 0,z:at.z},1);
       await expect(rescuer.locator('#action')).toContainText('Revive partner');
       if (rescuer === guest) await guest.locator('#operate').tap();
       else await host.keyboard.press('q');

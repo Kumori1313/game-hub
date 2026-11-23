@@ -98,12 +98,14 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const placeNow = page => placeOf(self(page));
     // The contract starts in the home dimension; the rift leads outdoors.
     expect(placeNow(host)).toBe('home');
+    await expect(host.locator('#scene')).toHaveAttribute('data-built','home');
     // The façade stays shut until the whole crew is through, so the guest follows first.
     await guest.locator('#enter').tap();
     await goOutdoors(guest);
     expect(states.get(host).mission.arrival).toBe('open');
     await goInside(host,plan);
     expect(states.get(host).mission.arrival).toBe('closed');
+    await expect(host.locator('#scene')).toHaveAttribute('data-built','home outside inside');
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
     try { await expect(host.locator('#action')).toContainText('Open bulkhead',{timeout:10000}); }
@@ -309,6 +311,8 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     // and leave empty-handed, then return to the lobbies from the receipt.
     const next = plans.get(host).at(-1);
     for (const page of [host,guest]) expect(placeNow(page)).toBe('home');
+    // Home holds nothing of the expedition: the facility and the outdoor map are gone.
+    for (const page of [host,guest]) await expect(page.locator('#scene')).toHaveAttribute('data-built','home');
     await host.locator('canvas').click();
     await guest.locator('canvas').tap();
     await Promise.all([goOutdoors(host),goOutdoors(guest)]);

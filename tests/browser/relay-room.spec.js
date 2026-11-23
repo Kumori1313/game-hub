@@ -67,6 +67,9 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await host.locator('#hub-start').click();
     await expect(guest.locator('#enter')).toBeEnabled();
     await expect(host.locator('#connection')).toContainText('2/2 online');
+    // Operators go by the names chosen in the lobby.
+    await expect(host.locator('#connection')).toContainText('Relay host');
+    await expect(guest.locator('#connection')).toContainText('Relay guest');
     expect(new URL(guest.url()).searchParams.get('lobby')).toBe(room);
     const duplicate = await contexts[0].newPage();
     await duplicate.goto(host.url());
@@ -90,13 +93,17 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const plan = plans.get(host)[0];
     expect(plan.version).toBe(5);
     expect(plans.get(guest)[0]).toEqual(plan);
-    const [{route},{anchor},{spawnSalvage,liftOf},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
+    const [{route},{anchor},{spawnSalvage},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
     const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
     const placeNow = page => placeOf(self(page));
     // The contract starts in the home dimension; the rift leads outdoors.
     expect(placeNow(host)).toBe('home');
-    await goInside(host,plan);
+    // The façade stays shut until the whole crew is through, so the guest follows first.
+    await guest.locator('#enter').tap();
+    await goOutdoors(guest);
     expect(states.get(host).mission.arrival).toBe('open');
+    await goInside(host,plan);
+    expect(states.get(host).mission.arrival).toBe('closed');
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
     try { await expect(host.locator('#action')).toContainText('Open bulkhead',{timeout:10000}); }
@@ -137,7 +144,9 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         if (states.get(page).mission?.down.some(d => d.id === self(page).id)) throw Error('Operator down while walking');
         const remaining = to-coordinate();
         if (Math.abs(remaining) < 0.4) return;
-        const key = axis === 'x' ? (remaining > 0 ? 'd' : 'a') : (remaining > 0 ? 's' : 'w');
+        // Leaving the facility faces the operator south, which reverses the keys.
+        const ahead = remaining > 0 !== Math.cos(self(page).yaw) < 0;
+        const key = axis === 'x' ? (ahead ? 'd' : 'a') : (ahead ? 's' : 'w');
         await page.keyboard.down(key);
         try { await page.waitForTimeout(Math.max(150,Math.min(3000,Math.abs(remaining)/3.3*1000-120))); }
         finally { await page.keyboard.up(key); }
@@ -173,6 +182,37 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         await host.keyboard.press('r');
       }
       await expect.poll(() => placeNow(page)).toBe('inside');
+    }
+    // From home through the rift to the outdoor map.
+    async function goOutdoors(page) {
+      await stroll(page,home().geometry,home().rift,'home');
+      await expect.poll(() => placeNow(page)).toBe('outside');
+    }
+    // Back out through Intake's door to the façade.
+    async function leaveFacility(page) {
+      await travel(page,{x:0,y:0,z:5});
+      if (page === guest) {
+        await expect(guest.locator('#open-door')).toHaveText('Leave facility');
+        await guest.locator('#open-door').tap();
+      } else {
+        await expect(host.locator('#action')).toContainText('Leave the facility');
+        await host.keyboard.press('r');
+      }
+      await expect.poll(() => placeNow(page)).toBe('outside');
+    }
+    // Ring the bell in front of the façade; the exit rift opens.
+    async function ringBell(page,facility) {
+      const map = outdoors(facility.seed);
+      await stroll(page,map.geometry,map.ringing,'outside');
+      await expect(page.locator('#action')).toContainText('Ring the bell');
+      await page.keyboard.press('q');
+      await expect.poll(() => states.get(page).mission.rift).toBeTruthy();
+    }
+    // Walk into the open rift, carrying whatever is in hand.
+    async function intoRift(page,facility) {
+      const rift = states.get(page).mission.rift;
+      await stroll(page,outdoors(facility.seed).geometry,{x:rift.x,y:0,z:rift.z},'outside');
+      await expect.poll(() => placeNow(page)).toBe('home');
     }
     // Reviving only needs to be within 1.7 m, so a rescuer may stop short.
     async function travel(page,to,near = 0) {
@@ -235,17 +275,13 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await travel(host,{x:rest.x,y:rest.y,z:rest.z},1);
     await host.keyboard.press('e');
     await expect.poll(() => carried(host,1)).toContain(hostTaken);
-    // Haul both items back to the lift in Intake, load them, and extract together.
-    const lift = {...liftOf(plan)};
-    await together(lift,lift);
-    await expect(host.locator('#action')).toContainText('Load 1 item');
-    await host.keyboard.press('q');
-    await expect(guest.locator('#operate')).toHaveText('Load 1 item');
-    await guest.locator('#operate').tap();
-    await expect.poll(() => states.get(host).mission.haul.filter(h => h.loaded).length).toBe(2);
-    await expect(guest.locator('#operate')).toHaveText('Extract crew');
-    await guest.locator('#operate').tap();
-    const value = hostItem.value+guestItem.value;
+    // Carry both items out through Intake's door, ring the bell, and walk into the rift.
+    const worth = id => spawnSalvage(plan).find(i => i.id === id).value;
+    const value = worth(hostTaken)+worth(carried(guest,2)[0]);
+    await Promise.all([leaveFacility(host),leaveFacility(guest)]);
+    await ringBell(host,plan);
+    await expect.poll(() => states.get(guest).mission.enraged).toBe(true);
+    await Promise.all([intoRift(host,plan),intoRift(guest,plan)]);
     for (const page of [host,guest]) {
       await expect(page.locator('#result-title')).toHaveText('Credited '+value);
       await expect(page.locator('#receipt')).toContainText('Credited'+value);
@@ -269,20 +305,15 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect.poll(() => plans.get(guest).at(-1).seed).not.toBe(plan.seed);
     expect(plans.get(guest).at(-1)).toEqual(plans.get(host).at(-1));
     for (const page of [host,guest]) await expect(page.locator('#result')).toBeHidden();
-    // Back home after the sale: through the rift to the next facility, extract
-    // empty-handed from the lift, then return to the lobbies from the receipt.
-    const next = plans.get(host).at(-1), nextLift = {...liftOf(next)};
+    // Back home after the sale: through the rift to the next map, ring the bell
+    // and leave empty-handed, then return to the lobbies from the receipt.
+    const next = plans.get(host).at(-1);
     for (const page of [host,guest]) expect(placeNow(page)).toBe('home');
     await host.locator('canvas').click();
     await guest.locator('canvas').tap();
-    await Promise.all([goInside(host,next),goInside(guest,next)]);
-    const travelNext = async (page) => {
-      const p = self(page);
-      for (const leg of route(next,{x:p.x,y:p.feetY ?? 0,z:p.z},nextLift)) { await walk(page,'x',leg.x); await walk(page,'z',leg.z); }
-    };
-    await Promise.all([travelNext(host),travelNext(guest)]);
-    await expect(host.locator('#action')).toContainText('Extract crew');
-    await host.keyboard.press('q');
+    await Promise.all([goOutdoors(host),goOutdoors(guest)]);
+    await ringBell(host,next);
+    await Promise.all([intoRift(host,next),intoRift(guest,next)]);
     await expect(host.locator('#result-eyebrow')).toHaveText('Expedition 2 of 3 sold');
     await host.locator('#replay').click();
     await expect(host.locator('#hub-select')).toBeVisible();

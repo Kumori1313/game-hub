@@ -1,39 +1,62 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Project structure
 
-This repository is currently in the planning stage. `multiplayer_game_hub_roadmap.md` defines the proposed architecture, phased work, and release milestones; `LICENSE` contains the MIT license. No application source, test suite, or asset directories exist yet.
+Game Hub is the discovery site for small multiplayer browser games. It is published at `https://kumori1313.github.io/game-hub/`, and every game lives in its own repository and route:
 
-The planned hub runs on GitHub Pages, with individual games maintained in separate repositories. Firebase anonymous authentication and Realtime Database provide guest identity, lobbies, and synchronization. Keep hub work here and game-specific implementations in their respective repositories. Document new directories when introducing the initial scaffold.
+| Game | Repository | Route | Lobby integration |
+| --- | --- | --- | --- |
+| Tic-Tac-Toe | `Kumori1313/tic-tac-toe` | `/tic-tac-toe/` | Shared identity and lobbies |
+| Poker | `Kumori1313/poker` | `/poker/` | Shared identity and lobbies |
+| Relay Room | `Kumori1313/Horror-Friendslop`, published by `Kumori1313/relay-room` | `/relay-room/` | Shared identity and lobbies, browser-hosted match |
+| Counter-Attack Web | Another owner's site | Embedded from its own origin | Game Hub lobbies through a message port |
 
-## Build, Test, and Development Commands
+- `src/`: the hub page. `game-catalog.js` holds the reviewed launch entries; `guest.js` and `guest-ui.js` handle guest identity; `cs-web-room.js` and `cs-web-relay.js` run Counter-Attack Web's lobby and relay.
+- `supabase/`: the single shared backend for the hub and every game. It holds `config.toml`, the SQL migrations, Realtime channel policies, and monitoring queries. Games must not create a second backend.
+- `scripts/`: backend checks, API integration tests, the release check, `security-policy.mjs` (CSP and environment validation), and `serve-session-test.mjs`, which serves the hub and game builds under one origin on port 4175.
+- `tests/`: Node unit tests at the top level; Playwright suites in `tests/browser/`.
+- `docs/`: the game development guide, contracts (lobby, gameplay, shared room, poker), per-game docs, the release runbook and report, the security review, and plans such as `third-party-games.md`.
+- `multiplayer_game_hub_roadmap.md`: milestones with checkbox progress. Preserve its headings and checkbox format.
 
-There is currently no package manifest, build tool, development server, or automated test command. Do not assume `npm test` or `npm run build` works.
+`dist/`, `test-results/`, and `UI-Ideas/` are ignored.
 
-- Use `git status --short` to review pending changes.
-- Use `git diff --check` to check tracked changes for whitespace errors.
-- Use `git diff` to review changes before committing.
+## Build, test, and development
 
-When adding application tooling, document exact installation, local development, build, and test commands in a README. Include Firebase Emulator Suite setup before introducing database integration.
+Node 22.12 or later. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. These are bundled into browser code; never use a secret or service-role key.
 
-## Coding Style & Naming Conventions
+```sh
+npm ci
+npm run supabase:start      # local Supabase in Docker (needed by most checks)
+npx supabase migration up   # apply new migrations
+npm run dev                 # http://127.0.0.1:5173/game-hub/
+npm run build               # dist/ with the /game-hub/ base path
+npm test                    # Node unit tests: guest validation, security policy
+npm run check:backend       # local anonymous sign-in and restricted Data API
+npm run test:lobbies        # also test:rooms, test:security, test:poker, test:bots, test:settings, test:upgrade
+npm run test:e2e            # all Playwright suites; needs GAME_SITE_DIR (and the other game checkouts built)
+npm run dev:relay           # hub plus Relay Room (../Horror-Friendslop/dist) on port 4175
+npm run test:relay          # Relay Room acceptance tests; needs port 4175 free
+npm run test:release        # full release check; set GAME_SITE_DIR and POKER_SITE_DIR
+```
 
-For Markdown, use descriptive headings, short paragraphs, fenced code blocks for commands, and relative links to repository files. Preserve the roadmap's phase headings and checkbox format when updating progress.
+To check the published sites instead, set `E2E_BASE_URL=https://kumori1313.github.io`. Browser tests create anonymous users in whichever backend they target, so use local Supabase for routine work. A successful build is not gameplay validation.
 
-No language-specific style, formatter, or linter has been established. Define indentation, file naming, and formatting scripts alongside the first implementation; follow those choices consistently afterward.
+## Coding style
 
-## Testing Guidelines
+ES modules, two-space indentation, single quotes in JavaScript, and kebab-case file names. Dependencies are pinned and lockfiles are committed. There is no formatter or linter. For Markdown, use descriptive headings, short paragraphs, fenced code blocks for commands, and relative links.
 
-No testing framework or coverage threshold is configured. Review documentation for accurate paths, commands, and milestone status.
+## Testing
 
-The roadmap calls for emulator tests covering permitted and denied database operations, concurrent joins, invalid moves, and unauthorized host actions. Add these with backend integration. Before release, verify the full guest-to-game flow with two independent browser sessions, including disconnects and GitHub Pages asset paths.
+Node's built-in runner covers unit tests; Playwright covers browser flows in Chromium (set `E2E_BROWSER=firefox` for a second engine). Before a release, run `npm run test:release` against local Supabase and record the browser engine and exact commits of every repository in the release report. The Relay Room suite imports the game's own route planner from the sibling checkout (`RELAY_SITE_DIR`, default `../Horror-Friendslop`).
 
-## Commit & Pull Request Guidelines
+## Commits and pull requests
 
-Git history contains only `Initial commit`, so no established commit convention exists. Use short, imperative subjects describing a focused change, such as `Document lobby membership rules`.
+Short, imperative subjects that name the change, such as `Default private lobbies to four-character codes`. Pull requests describe the change, link the roadmap milestone, and record validation. Include screenshots for interface changes, and for game integrations include the game ID, route, player limits, and licenses.
 
-Pull requests should describe the change, link relevant issues or roadmap phases, and record validation performed. Include screenshots for interface changes and explain configuration or deployment changes.
+## Deployment
 
-## Security & Configuration
+GitHub Actions builds pull requests and deploys `main` to GitHub Pages. The Pages build reads the `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` Actions variables; listing flags such as `VITE_ENABLE_RELAY_ROOM` control which games appear. See `docs/release-runbook.md`.
 
-Keep service-account credentials and server secrets out of commits and browser code. Use emulators for development and deny-by-default database rules. Treat display names as untrusted text and use Firebase IDs for identity.
+## Security
+
+Treat display names as untrusted text and render them with `textContent`. Identity is the Supabase guest UUID, never a name. Keep backend access deny-by-default, verify membership server-side, and keep privileged credentials out of commits and browser code. Same-origin game code can read the hub's browser storage, so only trusted code may be hosted on the hub's origin. See `docs/security-review.md`.

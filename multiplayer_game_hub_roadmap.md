@@ -148,13 +148,12 @@ Platform expansion and additional games are the next priority. Further poker var
 - [x] Generalize hub navigation so new games can be listed through reviewed entries in `src/game-catalog.js`. Verify the existing development and production routes.
 - [x] Generalize game-specific room dispatch through private backend adapters. Verify existing room behavior and snapshot compatibility locally.
 - [x] Add and verify another game using the development guide. [Relay Room](docs/relay-room.md) covers guest entry, code admission, a full playthrough through extraction, recovery after refresh, and return to the hub in its browser playtest.
-- [ ] Support games maintained by other users or organizations. Distinguish external catalog links from shared identity/lobby integration; follow the [third-party integration plan](docs/third-party-games.md).
-- [ ] Before integrating a game hosted on another origin, define and test a secure authentication handoff. The current shared-origin browser session does not automatically carry to another owner's GitHub Pages site. Review trust and redistribution permissions before hosting external code on the hub's origin.
 - [x] Integrate a game deployed by another owner. [Counter-Attack Web](docs/cs-web.md) keeps its original Pages origin and uses Game Hub lobbies with a browser-hosted match.
 - [x] Verify Counter-Attack Web's cross-origin launch without exporting Game Hub credentials. Live Chromium checks passed for code admission, peer connection, guest recovery, and return to the hub.
 - [x] Add a private relay for Counter-Attack Web when direct connections fail. Live Chromium checks covered both transports, a touch-enabled host, equipped weapon sync, and guest movement while the host stopped rendering.
 - [x] Continue exchanging late ICE candidates and predict guest relay movement. Automated Chromium checks passed for a direct connection with delayed candidates and for gameplay over the forced relay.
 - [x] Verify Counter-Attack Web on two physical devices. Player testing confirmed a direct match and reported barely noticeable guest latency after the relay update.
+- [ ] Open Game Hub to more games from other owners. Counter-Attack Web's launch was built for that one game; turn it into a documented contract any outside game can adopt, following the [third-party integration plan](docs/third-party-games.md). The two items below are part of this work.
 - [ ] Label standalone external links separately from games that use Game Hub lobbies.
 - [ ] Define and test cross-origin authentication handoff before integrating games on another owner’s origin. Review trust and redistribution permission before hosting code on the hub’s origin.
 - [ ] Extract shared code after the lobby contract is verified. Define supported client versions, migrations, and compatibility errors.

@@ -88,7 +88,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(3);
+    expect(plan.version).toBe(4);
     expect(plans.get(guest)[0]).toEqual(plan);
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
@@ -117,10 +117,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     // Walk the generated corridors and stairs with normal controls and operate the paired floor pads.
     await host.locator('#enter').click();
     await guest.locator('#enter').tap();
-    const [{route},{anchor}] = await Promise.all([load('route.ts'),load('layout.ts')]);
-    const bays = new Map(plan.rooms.map(r => [r.id,r]));
-    const intake = plan.rooms.find(r => r.kind === 'intake');
-    const relay = bays.get(plan.objectiveId), exit = bays.get(plan.exitId);
+    const [{route},{anchor},{spawnSalvage,liftOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts')]);
     // Hold the key for a little less than the distance needs, wait for the
     // host's snapshot, then settle with short taps. Snapshots lag the keys, so
     // walking until the reported position passes the target would overshoot.
@@ -145,64 +142,93 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     // Reviving only needs to be within 1.7 m, so a rescuer may stop short.
     async function travel(page,to,near = 0) {
       const p = self(page);
-      const legs = route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},to.kind ? anchor(to) : to,undefined,near);
+      const legs = route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},to.template ? anchor(to) : to,undefined,near);
       if (!legs) throw Error('No walking route to '+(to.id ?? JSON.stringify(to)));
       for (const leg of legs) {
         await walk(page,'x',leg.x);
         await walk(page,'z',leg.z);
       }
     }
-    const receiver = plan.callout === 'black-start' ? plan.rooms.find(r => r.kind === 'switchboard') : intake;
-    await travel(guest,receiver);
-    if (plan.callout === 'black-start') {
-      await expect(guest.locator('#operate')).toHaveText('Charge switchboard');
-      await guest.locator('#operate').tap();
+    // Each operator walks to nearby salvage and collects it with their own controls.
+    const pathLength = legs => legs.slice(1).reduce((sum,l,i) => sum+Math.hypot(l.x-legs[i].x,l.z-legs[i].z),0);
+    function nearest(page,taken) {
+      const p = self(page);
+      return spawnSalvage(plan).filter(i => !taken.includes(i.id))
+        .map(i => ({i,legs:route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},i,undefined,1)})).filter(r => r.legs)
+        .sort((a,b) => pathLength(a.legs)-pathLength(b.legs))[0].i;
     }
-    await travel(host,relay);
-    await expect(host.locator('#action')).toContainText('Send test tone');
+    // Travel together; a strike on the way is part of the shift, so the
+    // standing operator walks back, revives their partner, and both carry on.
+    async function together(hostTo,guestTo) {
+      for (let attempt=0; ; attempt++) {
+        const trips = await Promise.allSettled([travel(host,hostTo,hostTo.template ? 0 : 1),travel(guest,guestTo,guestTo.template ? 0 : 1)]);
+        if (trips.every(t => t.status === 'fulfilled')) return;
+        const down = states.get(host).mission.down.map(d => d.id);
+        if (attempt >= 3 || down.length !== 1) throw trips.find(t => t.status === 'rejected').reason;
+        const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
+        const at = self(fallen);
+        await travel(rescuer,{x:at.x,y:at.feetY ?? 0,z:at.z},1);
+        await expect(rescuer.locator('#action')).toContainText('Revive partner');
+        if (rescuer === guest) await guest.locator('#operate').tap();
+        else await host.keyboard.press('q');
+        await expect.poll(() => states.get(host).mission.down.length).toBe(0);
+      }
+    }
+    const hostItem = nearest(host,[]), guestItem = nearest(guest,[hostItem.id]);
+    await together(hostItem,guestItem);
+    await expect(host.locator('#action')).toContainText('Collect');
+    await host.keyboard.press('c');
+    await expect(host.locator('#pack')).toContainText('Pack 1/3');
+    await expect(guest.locator('#collect')).toBeVisible();
+    await guest.locator('#collect').tap();
+    await expect(guest.locator('#pack')).toContainText('Pack 1/3');
+    await expect.poll(() => states.get(host).mission.awake).toBe(true);
+    // Haul both items back to the lift in Intake, load them, and extract together.
+    const lift = {...liftOf(plan)};
+    await together(lift,lift);
+    await expect(host.locator('#action')).toContainText('Load 1 item');
     await host.keyboard.press('q');
-    await expect(guest.locator('#action')).toContainText('Answer relay');
+    await expect(guest.locator('#operate')).toHaveText('Load 1 item');
     await guest.locator('#operate').tap();
-    await expect(host.locator('#warning')).toContainText('Knocking above');
-    await guest.screenshot({path:'/tmp/relay-shift-mobile.png'});
-    await expect(host.locator('#warning')).toContainText('You are down',{timeout:10000});
-    await host.reload();
-    await expect(host.locator('#enter')).toBeEnabled();
-    await host.locator('#enter').click();
-    await expect(host.locator('#warning')).toContainText('You are down');
-    await travel(guest,relay);
-    await expect(guest.locator('#action')).toContainText('Revive partner');
+    await expect.poll(() => states.get(host).mission.haul.filter(h => h.loaded).length).toBe(2);
+    await expect(guest.locator('#operate')).toHaveText('Extract crew');
     await guest.locator('#operate').tap();
-    await expect(host.locator('#warning')).not.toContainText('You are down');
-    // Travel together and extract as soon as both arrive. The walk to the exit
-    // is long enough for another strike: the standing operator walks back,
-    // revives their partner, and both carry on.
-    for (let attempt=0; ; attempt++) {
-      const trips = await Promise.allSettled([travel(host,exit),travel(guest,exit)]);
-      if (trips.every(t => t.status === 'fulfilled')) break;
-      const down = states.get(host).mission.down.map(d => d.id);
-      if (attempt >= 3 || down.length !== 1) throw trips.find(t => t.status === 'rejected').reason;
-      const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
-      const at = self(fallen);
-      await travel(rescuer,{x:at.x,y:at.feetY ?? 0,z:at.z},1);
-      await expect(rescuer.locator('#action')).toContainText('Revive partner');
-      if (rescuer === guest) await guest.locator('#operate').tap();
-      else await host.keyboard.press('q');
-      await expect.poll(() => states.get(host).mission.down.length).toBe(0);
-    }
-    await expect(guest.locator('#action')).toContainText('Extract crew');
-    await guest.locator('#operate').tap();
+    const value = hostItem.value+guestItem.value;
     for (const page of [host,guest]) {
-      await expect(page.locator('#result-title')).toHaveText('Crew extracted');
+      await expect(page.locator('#result-title')).toHaveText('Credited '+value);
+      await expect(page.locator('#receipt')).toContainText('Credited'+value);
       const reference = await page.locator('#report-reference').inputValue();
-      expect(reference).toMatch(/^Build (?:local|[0-9a-f]{12}) · Layout v[0-9]+ · Seed [0-9]+$/);
-      expect(reference).toContain('Layout v'+plan.version+' · Seed '+plan.seed);
+      expect(reference).toMatch(/^Build (?:local|[0-9a-f]{12}) · Layout v[0-9]+ · Contract [0-9]+ · Expedition [0-9]+ · Seed [0-9]+$/);
+      expect(reference).toContain('Layout v'+plan.version+' · Contract '+plan.seed+' · Expedition 1 · Seed '+plan.seed);
     }
+    // A host refresh during settlement shows the same sale, credited once.
+    await host.reload();
+    await expect(host.locator('#result-title')).toHaveText('Credited '+value);
+    await expect.poll(() => states.get(host)?.mission?.contract.credited).toBe(value);
+    expect(states.get(host).mission.contract.receipts).toHaveLength(1);
     await contexts[0].grantPermissions(['clipboard-read','clipboard-write']);
     await host.getByRole('button',{name:'Copy reference'}).click();
     await expect(host.locator('#copy-reference')).toHaveText('Copied');
     expect(await host.evaluate(() => navigator.clipboard.readText())).toBe(await host.locator('#report-reference').inputValue());
     await host.screenshot({path:'/tmp/relay-shift-result.png'});
+    // The next expedition is a fresh facility for both operators.
+    await guest.locator('#next').tap();
+    await expect.poll(() => states.get(host)?.mission?.contract.index).toBe(1);
+    await expect.poll(() => plans.get(guest).at(-1).seed).not.toBe(plan.seed);
+    expect(plans.get(guest).at(-1)).toEqual(plans.get(host).at(-1));
+    for (const page of [host,guest]) await expect(page.locator('#result')).toBeHidden();
+    // Extract empty-handed from the lift, then return to the lobbies from the receipt.
+    const next = plans.get(host).at(-1), nextLift = {...liftOf(next)};
+    await host.locator('canvas').click();
+    await guest.locator('canvas').tap();
+    const travelNext = async (page) => {
+      const p = self(page);
+      for (const leg of route(next,{x:p.x,y:p.feetY ?? 0,z:p.z},nextLift)) { await walk(page,'x',leg.x); await walk(page,'z',leg.z); }
+    };
+    await Promise.all([travelNext(host),travelNext(guest)]);
+    await expect(host.locator('#action')).toContainText('Extract crew');
+    await host.keyboard.press('q');
+    await expect(host.locator('#result-eyebrow')).toHaveText('Expedition 2 of 3 sold');
     await host.locator('#replay').click();
     await expect(host.locator('#hub-select')).toBeVisible();
     await expect(guest.locator('#hub-select')).toBeVisible({timeout:10000});
@@ -224,7 +250,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#connection')).toContainText('2/2 online');
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);
     await expect.poll(() => states.get(host)?.round).not.toBe(firstRound);
-    await expect.poll(() => states.get(host)?.mission?.stage).toBe(plans.get(host).at(-1).callout === 'black-start' ? 'prime' : 'trace');
+    await expect.poll(() => states.get(host)?.mission?.stage).toBe('explore');
     // A forced seed deliberately repeats across lobbies; the protocol round is always fresh.
     expect(states.get(host).round).not.toBe(firstRound);
     if (published) {

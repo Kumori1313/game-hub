@@ -88,8 +88,15 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(4);
+    expect(plan.version).toBe(5);
     expect(plans.get(guest)[0]).toEqual(plan);
+    const [{route},{anchor},{spawnSalvage,liftOf},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
+    const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
+    const placeNow = page => placeOf(self(page));
+    // The contract starts in the home dimension; the rift leads outdoors.
+    expect(placeNow(host)).toBe('home');
+    await goInside(host,plan);
+    expect(states.get(host).mission.arrival).toBe('open');
     // Face north from Intake and walk up to the first bulkhead using real inputs.
     await host.keyboard.down('w');
     try { await expect(host.locator('#action')).toContainText('Open bulkhead',{timeout:10000}); }
@@ -117,16 +124,16 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     // Walk the generated corridors and stairs with normal controls and operate the paired floor pads.
     await host.locator('#enter').click();
     await guest.locator('#enter').tap();
-    const [{route},{anchor},{spawnSalvage,liftOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts')]);
     // Hold the key for a little less than the distance needs, wait for the
     // host's snapshot, then settle with short taps. Snapshots lag the keys, so
     // walking until the reported position passes the target would overshoot.
     // A guest samples its keys every 100 ms, so a tap lasts at least 150 ms;
     // routes keep 0.85 m of clearance, which absorbs the 0.4 m tolerance.
-    const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
-    async function walk(page,axis,to) {
+    // `where` stops the walk when the operator changes place, as stepping into a rift does.
+    async function walk(page,axis,to,where) {
       const coordinate = () => self(page)[axis];
       for (let pulse=0; pulse<40; pulse++) {
+        if (where && placeNow(page) !== where) return;
         if (states.get(page).mission?.down.some(d => d.id === self(page).id)) throw Error('Operator down while walking');
         const remaining = to-coordinate();
         if (Math.abs(remaining) < 0.4) return;
@@ -138,6 +145,34 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         if (/Open bulkhead|Bulkhead within reach/.test(await page.locator('#action').textContent())) await page.keyboard.press('r');
       }
       throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate()+' on seed '+plan.seed);
+    }
+    // Walk a route in the home dimension or outdoors, on that place's own geometry.
+    async function stroll(page,geometry,to,where) {
+      const p = self(page);
+      const legs = route(geometry,{x:p.x,y:p.feetY ?? 0,z:p.z},to);
+      if (!legs) throw Error('No walking route '+where+' to '+JSON.stringify(to));
+      for (const leg of legs) {
+        if (placeNow(page) !== where) return;
+        await walk(page,'x',leg.x,where);
+        await walk(page,'z',leg.z,where);
+      }
+    }
+    // Through the home rift, across the outdoor map, and in at the façade door.
+    async function goInside(page,facility) {
+      if (placeNow(page) === 'home') {
+        await stroll(page,home().geometry,home().rift,'home');
+        await expect.poll(() => placeNow(page)).toBe('outside');
+      }
+      const map = outdoors(facility.seed);
+      await stroll(page,map.geometry,{x:map.door.x,y:0,z:map.door.z+1},'outside');
+      if (page === guest) {
+        await expect(guest.locator('#open-door')).toHaveText('Enter facility');
+        await guest.locator('#open-door').tap();
+      } else {
+        await expect(host.locator('#action')).toContainText('Enter the facility');
+        await host.keyboard.press('r');
+      }
+      await expect.poll(() => placeNow(page)).toBe('inside');
     }
     // Reviving only needs to be within 1.7 m, so a rescuer may stop short.
     async function travel(page,to,near = 0) {
@@ -174,6 +209,8 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         await expect.poll(() => states.get(host).mission.down.length).toBe(0);
       }
     }
+    await goInside(guest,plan);
+    expect(states.get(host).mission.arrival).toBe('closed');
     const hostItem = nearest(host,[]), guestItem = nearest(guest,[hostItem.id]);
     await together(hostItem,guestItem);
     // The hotbar: the host already carries the flashlight, so salvage takes a second slot.
@@ -232,10 +269,13 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect.poll(() => plans.get(guest).at(-1).seed).not.toBe(plan.seed);
     expect(plans.get(guest).at(-1)).toEqual(plans.get(host).at(-1));
     for (const page of [host,guest]) await expect(page.locator('#result')).toBeHidden();
-    // Extract empty-handed from the lift, then return to the lobbies from the receipt.
+    // Back home after the sale: through the rift to the next facility, extract
+    // empty-handed from the lift, then return to the lobbies from the receipt.
     const next = plans.get(host).at(-1), nextLift = {...liftOf(next)};
+    for (const page of [host,guest]) expect(placeNow(page)).toBe('home');
     await host.locator('canvas').click();
     await guest.locator('canvas').tap();
+    await Promise.all([goInside(host,next),goInside(guest,next)]);
     const travelNext = async (page) => {
       const p = self(page);
       for (const leg of route(next,{x:p.x,y:p.feetY ?? 0,z:p.z},nextLift)) { await walk(page,'x',leg.x); await walk(page,'z',leg.z); }
@@ -266,7 +306,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(host.locator('#connection')).toContainText('2/2 online',{timeout:15000});
     expect(new URL(host.url()).searchParams.get('lobby')).not.toBe(room);
     await expect.poll(() => states.get(host)?.round).not.toBe(firstRound);
-    await expect.poll(() => states.get(host)?.mission?.stage).toBe('explore');
+    await expect.poll(() => states.get(host)?.mission?.stage).toBe('home');
     // A forced seed deliberately repeats across lobbies; the protocol round is always fresh.
     expect(states.get(host).round).not.toBe(firstRound);
     if (published) {

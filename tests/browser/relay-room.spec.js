@@ -212,6 +212,8 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     }
     // Walk into the open rift, carrying whatever is in hand.
     async function intoRift(page,facility) {
+      // Over a real connection the ring may not have reached this page yet.
+      await expect.poll(() => states.get(page).mission.rift).toBeTruthy();
       const rift = states.get(page).mission.rift;
       await stroll(page,outdoors(facility.seed).geometry,{x:rift.x,y:0,z:rift.z},'outside');
       await expect.poll(() => placeNow(page)).toBe('home');

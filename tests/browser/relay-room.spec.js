@@ -91,7 +91,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(6);
+    expect(plan.version).toBe(7);
     expect(plans.get(guest)[0]).toEqual(plan);
     const [{route},{anchor},{spawnSalvage},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
     const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
@@ -155,17 +155,44 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
         await page.waitForTimeout(220);
         if (/Open bulkhead|Bulkhead within reach/.test(await page.locator('#action').textContent())) await page.keyboard.press('r');
       }
-      throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate()+' on seed '+plan.seed);
+      throw Error('Walking '+axis+' to '+to+' stalled at '+coordinate()+' on seed '+plan.seed+' (at x '+self(page).x.toFixed(2)+', z '+self(page).z.toFixed(2)+', yaw '+self(page).yaw.toFixed(2)+', '+placeNow(page)+')');
+    }
+    // The walker steers by axis keys, which assumes facing north or south.
+    // Arriving outdoors faces the building from any side, so turn with the
+    // arrow keys (2 rad/s) to whichever of north or south is nearer.
+    async function square(page) {
+      for (let i=0;i<30;i++) {
+        const yaw = self(page).yaw, target = Math.cos(yaw) >= 0 ? 0 : Math.PI;
+        const diff = Math.atan2(Math.sin(target-yaw),Math.cos(target-yaw));
+        if (Math.abs(diff) < 0.04) return;
+        const key = diff > 0 ? 'ArrowLeft' : 'ArrowRight';
+        await page.keyboard.down(key);
+        try { await page.waitForTimeout(Math.max(25,Math.min(700,Math.abs(diff)/2*1000*0.85))); }
+        finally { await page.keyboard.up(key); }
+        await page.waitForTimeout(250);
+      }
+      throw Error('Could not turn to face north or south');
     }
     // Walk a route in the home dimension or outdoors, on that place's own geometry.
     async function stroll(page,geometry,to,where) {
+      if (where === 'outside') await square(page);
       const p = self(page);
       const legs = route(geometry,{x:p.x,y:p.feetY ?? 0,z:p.z},to);
       if (!legs) throw Error('No walking route '+where+' to '+JSON.stringify(to));
       for (const leg of legs) {
         if (placeNow(page) !== where) return;
-        await walk(page,'x',leg.x,where);
-        await walk(page,'z',leg.z,where);
+        await along(page,'x',leg.x,'z',leg.z,where);
+        await along(page,'z',leg.z,'x',leg.x,where);
+      }
+    }
+    // A long straight walk drifts sideways if the heading is a touch off, so
+    // walk it in 6 m stretches and step back onto the line between them.
+    async function along(page,axis,to,other,line,where) {
+      for (let i=0;i<40 && Math.abs(to-self(page)[axis]) >= 0.4;i++) {
+        if (where && placeNow(page) !== where) return;
+        const at = self(page)[axis], next = at+Math.max(-6,Math.min(6,to-at));
+        await walk(page,axis,next,where);
+        if (Math.abs(self(page)[other]-line) > 0.3) await walk(page,other,line,where);
       }
     }
     // Through the home rift, across the outdoor map, and in at the façade door.
@@ -215,7 +242,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
       // Over a real connection the ring may not have reached this page yet.
       await expect.poll(() => states.get(page).mission.rift).toBeTruthy();
       const rift = states.get(page).mission.rift;
-      await stroll(page,outdoors(facility.seed).geometry,{x:rift.x,y:0,z:rift.z},'outside');
+      await stroll(page,outdoors(facility.seed).geometry,{x:rift.x,y:rift.y ?? 0,z:rift.z},'outside');
       await expect.poll(() => placeNow(page)).toBe('home');
     }
     // Reviving only needs to be within 1.7 m, so a rescuer may stop short.

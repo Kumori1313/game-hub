@@ -91,7 +91,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(guest).lamp.on).toBe(true);
     const firstRound = states.get(host).round;
     const plan = plans.get(host)[0];
-    expect(plan.version).toBe(7);
+    expect(plan.version).toBe(8);
     expect(plans.get(guest)[0]).toEqual(plan);
     const [{route},{anchor},{spawnSalvage},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
     const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));

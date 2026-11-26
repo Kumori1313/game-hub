@@ -297,41 +297,45 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(host).mission.arrival).toBe('closed');
     const hostItem = nearest(host,[]), guestItem = nearest(guest,[hostItem.id]);
     await together(hostItem,guestItem);
-    // A Gnawer may have carried an item off before its operator got there:
-    // choose again from where salvage lies now.
-    for (let attempt=0; attempt<3; attempt++) {
-      await host.waitForTimeout(500);
-      const hostReady = /Pick up/.test(await host.locator('#action').textContent() ?? ''), guestReady = await guest.locator('#take').isVisible();
-      if (hostReady && guestReady) break;
-      const again = hostReady ? undefined : nearest(host,[]), guestAgain = guestReady ? undefined : nearest(guest,again ? [again.id] : []);
-      await Promise.all([again && travel(host,again,1),guestAgain && travel(guest,guestAgain,1)]);
-    }
     // The hotbar: the host already carries the flashlight, so salvage takes a second slot.
     const carried = (page,id) => states.get(page).players.find(p => p.id === id).slots.filter(Boolean);
+    const salvageHeld = (page,id) => carried(page,id).filter(item => item !== 'lamp');
+    // Take salvage with the page's own controls: here if there is some in
+    // reach, otherwise the nearest lying free. A Gnawer may carry an item off
+    // first, so choose again from where salvage lies now, up to four times.
+    async function collect(page,id,avoid = []) {
+      for (let attempt=0; attempt<4; attempt++) {
+        const before = salvageHeld(page,id).length;
+        const ready = async () => page === guest ? guest.locator('#take').isVisible() : /Pick up/.test(await host.locator('#action').textContent() ?? '');
+        if (!(await ready())) { await travel(page,nearest(page,avoid),1); await page.waitForTimeout(300); }
+        if (!(await ready())) continue;
+        if (page === guest) await guest.locator('#take').tap(); else await host.keyboard.press('e');
+        try { await expect.poll(() => salvageHeld(page,id).length,{timeout:3000}).toBe(before+1); return salvageHeld(page,id).at(-1); }
+        catch { /* gone before it could be taken */ }
+      }
+      throw Error('Could not collect salvage');
+    }
     // E takes the nearest item, which may be a neighbour of the one walked to.
-    await expect(host.locator('#action')).toContainText('Pick up');
-    await host.keyboard.press('e');
-    await expect.poll(() => carried(host,1).length).toBe(2);
+    const hostTaken = await collect(host,1);
     expect(carried(host,1)[0]).toBe('lamp');
-    const hostTaken = carried(host,1)[1];
     await expect(host.locator('#hotbar button[aria-pressed="true"]')).toHaveAttribute('aria-label',/^Slot 2: (?!empty)/);
-    await expect(guest.locator('#take')).toBeVisible();
-    await guest.locator('#take').tap();
-    await expect.poll(() => carried(guest,2).length).toBe(1);
+    await collect(guest,2,[hostTaken]);
     await expect.poll(() => states.get(host).mission.awake).toBe(true);
-    // A short throw: both clients agree where it lands, and the host picks it up again.
+    // A short throw: both clients agree where it lands, and the host picks it
+    // up again (or another piece, should a Gnawer snatch it first).
     await host.keyboard.down('t'); await host.waitForTimeout(250); await host.keyboard.up('t');
     const thrown = page => states.get(page).mission.haul.find(h => h.id === hostTaken);
     await expect.poll(() => thrown(host)?.owner === null && !thrown(host).flight && !thrown(guest)?.flight).toBe(true);
     const rest = thrown(host);
     expect([thrown(guest).x,thrown(guest).y,thrown(guest).z]).toEqual([rest.x,rest.y,rest.z]);
-    await travel(host,{x:rest.x,y:rest.y,z:rest.z},1);
-    await host.keyboard.press('e');
-    await expect.poll(() => carried(host,1)).toContain(hostTaken);
+    if (thrown(host).gnawer === undefined) await travel(host,{x:rest.x,y:rest.y,z:rest.z},1);
+    await collect(host,1);
     // Carry both items out through Intake's door, ring the bell, and walk into the rift.
-    const worth = id => spawnSalvage(plan).find(i => i.id === id).value;
-    const value = worth(hostTaken)+worth(carried(guest,2)[0]);
+    const worth = id => spawnSalvage(plan).find(i => i.id === id)?.value ?? 0;
     await Promise.all([leaveFacility(host),leaveFacility(guest)]);
+    // What the crew carries out, once both are outside where no Gnawer can
+    // follow: one may have taken a piece from a bag on the way.
+    const value = [...carried(host,1),...carried(guest,2)].reduce((sum,id) => sum+worth(id),0);
     await ringBell(host,plan);
     await expect.poll(() => states.get(guest).mission.enraged).toBe(true);
     await Promise.all([intoRift(host,plan),intoRift(guest,plan)]);

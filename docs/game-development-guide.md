@@ -25,7 +25,7 @@ For shared lobbies, register the game with the backend before enabling its rooms
 Use this path when your game owns its sign-in, lobbies, and matchmaking. Game Hub opens the published game through its catalog, and players continue through your game's usual flow. A standalone listing only needs an entry in the frontend catalog.
 
 1. In your hub pull request, include the game title, a unique lowercase slug, maintainer, source repository if public, player count, and the public HTTPS URL where players begin. Describe whether players need a separate account or can play as guests.
-2. Add an entry to [`src/game-catalog.js`](../src/game-catalog.js) with a unique `titleId` and `linkId`. Set `launchPath` to the full URL so the catalog uses it in both development and production. Include **External game** in `details` and describe sign-in if required. Name the button after the destination or action, such as **Play on Example Games**. Keep credentials and private invite codes out of the URL.
+2. Add an entry to [`src/game-catalog.js`](../src/game-catalog.js) with a unique `titleId` and `linkId`. Set `launchPath` to the full URL so the catalog uses it in both development and production. Cards show only the supported player range (`players`) and, for games from other owners, who provides the game (`provider`). Mention sign-in requirements in the pull request and on your own entry page, not on the card. Name the button after the destination or action, such as **Play on Example Games**. Keep credentials and private invite codes out of the URL.
 
    ```js
    {
@@ -34,7 +34,8 @@ Use this path when your game owns its sign-in, lobbies, and matchmaking. Game Hu
      titleId: 'example-arena-title',
      linkId: 'example-arena-link',
      linkLabel: 'Play on Example Games',
-     details: ['External game', '2–4 players', 'Separate account required'],
+     players: '2–4 players',
+     provider: 'Example Games',
      launchPath: 'https://games.example/arena/',
    },
    ```
@@ -166,7 +167,7 @@ Render confirmed snapshots. Ignore older rounds/revisions and late responses fro
 
 A shared-lobby integration PR covers both repositories.
 
-- Add a reviewed entry in `src/game-catalog.js` with the slug, title, link label, display details, unique title and link IDs, and local dev port. For `my-game` on port `5176`, the hub generates `/my-game/` in production and `http://127.0.0.1:5176/my-game/` in development.
+- Add a reviewed entry in `src/game-catalog.js` with the slug, title, link label, player range, unique title and link IDs, and local dev port. For `my-game` on port `5176`, the hub generates `/my-game/` in production and `http://127.0.0.1:5176/my-game/` in development.
 - Add the catalog/backend migration and new-game lifecycle/action tests in the hub. Keep gameplay disabled until its compatible client and reviewed backend are ready.
 - Add a root mapping in `scripts/serve-session-test.mjs`, for example:
 

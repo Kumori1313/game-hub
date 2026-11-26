@@ -105,7 +105,7 @@ export function mountGuestEntry({ client, gamePage = false }) {
         busy = false;
         render();
         if (error.textContent) input.focus();
-        else document.querySelector(gamePage ? '#selection-title' : '#game-link').focus();
+        else document.querySelector(gamePage ? '#selection-title' : '#game-link')?.focus();
       }
     }
   });

@@ -6,7 +6,7 @@ This guide describes the hub and its matching first-party interfaces. Other game
 
 Game Hub uses an original board-and-path emblem and `public/art/playfield.svg`, an original SVG illustration created for this project. Both repositories own matching copies. The same artwork is cropped in the navigation strip and enlarged beside a short page title. No reference-site artwork, logos, fonts, or scripts are shipped. `UI-Ideas/` remains a local, ignored research folder.
 
-The content layout pairs guest entry and game selection with a sticky desktop illustration. Below 760px it becomes a single column, with the illustration after the primary content. System sans-serif type supports controls, Georgia supplies editorial headings, and system monospace supplies compact annotations. No font downloads or animation packages are required.
+The hub places guest entry above a grid of game cards. Each card shows the title, the supported player range, the provider for games from other owners, and one launch link; no other metadata appears. Cards keep the square-cornered panel treatment and collapse to a single column on narrow screens. Game sites pair their lobby screen with a sticky desktop illustration that becomes a single column below 760px, with the illustration after the primary content. System sans-serif type supports controls, Georgia supplies editorial headings, and system monospace supplies compact annotations. No font downloads or animation packages are required.
 
 ## Shared files
 
@@ -15,7 +15,8 @@ The content layout pairs guest entry and game selection with a sticky desktop il
 | `index.html` | Apply saved theme synchronously before the first paint; dark fallback. |
 | `src/style.css` | Theme tokens, layouts, reusable controls, responsive and reduced-motion rules. |
 | `src/theme.js` | Labeled keyboard-accessible toggle, persistence, and cross-tab synchronization. |
-| `src/illustration.js` | Preview moves driven by scrolling and verified guest state. |
+| `src/game-catalog.js` | Hub only: reviewed game entries rendered as the card grid. |
+| `src/illustration.js` | Game sites only: preview moves driven by scrolling and verified guest state. |
 | `src/main.js` | Site-specific composition, headings, and navigation links. |
 | `public/art/playfield.svg` | Original navigation/banner artwork, served under each project base path. |
 
@@ -37,7 +38,7 @@ Theme changes update the document without rebuilding the guest UI. They must pre
 
 ## Illustration and accessibility
 
-The side board is labeled as an illustration rather than a playable match. Its five-move X win advances with page scrolling; confirmed guest readiness establishes a minimum preview step. The preview has no move counter, progress checklist, or explanatory captions. No live player counts, scores, or lobby statistics are invented.
+Only game sites show the side board, on the lobby screen before a match starts; the hub has none. The board is labeled as an illustration rather than a playable match. Its five-move X win advances with page scrolling; confirmed guest readiness establishes a minimum preview step. The preview has no move counter, progress checklist, or explanatory captions. No live player counts, scores, or lobby statistics are invented.
 
 An IntersectionObserver gates work to visible panels. Scroll/resize events schedule at most one pending animation frame, and hidden documents do not draw. No timer advances the preview automatically. Reduced-motion mode shows the final board without transitions and does not change the diagram as the user scrolls. Its static description remains available to assistive technology.
 
@@ -76,7 +77,7 @@ Use `.section-heading` and `.section-number` for grouping, `.game-card` for boun
 
 ## Verification
 
-The browser suite covers both existing guest behavior and redesign behavior: dark default under a light OS preference, cross-site persistence, keyboard toggling, preserved input and identity, invalid/unavailable storage, reduced motion, scrolling, responsive layouts, artwork URLs, and text/action/error token contrast. Run using the hub README’s local or hosted commands.
+The browser suite covers both existing guest behavior and redesign behavior: dark default under a light OS preference, cross-site persistence, keyboard toggling, preserved input and identity, invalid/unavailable storage, reduced motion, the hub's card grid, responsive layouts, artwork URLs, and text/action/error token contrast. Run using the hub README’s local or hosted commands.
 
 Full-page screenshots cover both sites in light/dark at 1440px and 320px. Guest tests also exercise returning guests, editing, failed requests, offline recovery, and cleared sessions. Inspect representative screenshots after changes; contrast-token checks do not replace visual review of artwork, overlays, or controls.
 

@@ -99,7 +99,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const plan = plans.get(host)[0];
     expect(plan.version).toBe(8);
     expect(plans.get(guest)[0]).toEqual(plan);
-    const [{route},{anchor},{spawnSalvage},{home,outdoors,placeOf}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts')]);
+    const [{route},{anchor},{spawnSalvage},{home,outdoors,placeOf},{kept}] = await Promise.all([load('route.ts'),load('layout.ts'),load('salvage.ts'),load('places.ts'),load('mission.ts')]);
     const self = page => states.get(page).players.find(p => p.id === (page === host ? 1 : 2));
     const placeNow = page => placeOf(self(page));
     // The contract starts in the home dimension; the rift leads outdoors.
@@ -256,19 +256,32 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     // an operator down on the way: the one still standing walks back, revives
     // them, and both go on, as with a strike inside. So that nobody escapes
     // with a partner still down, both stop just short of the rift first.
+    // Where creatures are live (the published smoke test), the scripted
+    // walkers may still lose one: once nobody can rescue them, or someone has
+    // died, wait for the expedition to end; the sale's receipt counts the loss.
+    const dead = page => !!states.get(host).mission.dead?.includes(page === host ? 1 : 2);
+    const over = () => states.get(host).mission.stage !== 'explore';
     async function rescuing(facility,run) {
       for (let attempt=0; ; attempt++) {
-        const trips = await Promise.allSettled([host,guest].map(page => placeNow(page) === 'home' ? Promise.resolve() : run(page)));
-        if (trips.every(t => t.status === 'fulfilled')) return;
-        const down = states.get(host).mission.down.map(d => d.id);
+        const trips = await Promise.allSettled([host,guest].map(page => placeNow(page) === 'home' || dead(page) ? Promise.resolve() : run(page)));
+        if (trips.every(t => t.status === 'fulfilled') || over()) return;
+        const m = states.get(host).mission, down = m.down.map(d => d.id);
         const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
-        if (attempt >= 3 || down.length !== 1 || placeNow(rescuer) !== 'outside') throw trips.find(t => t.status === 'rejected').reason;
-        const at = self(fallen);
-        await stroll(rescuer,outdoors(facility.seed).geometry,{x:at.x,y:at.feetY ?? 0,z:at.z},'outside',1);
-        await expect(rescuer.locator('#action')).toContainText('Revive partner');
-        if (rescuer === guest) await guest.locator('#operate').tap();
-        else await host.keyboard.press('q');
-        await expect.poll(() => states.get(host).mission.down.length).toBe(0);
+        if (attempt < 3 && down.length === 1 && placeNow(rescuer) === 'outside' && !dead(rescuer)) {
+          try {
+            const at = self(fallen);
+            await stroll(rescuer,outdoors(facility.seed).geometry,{x:at.x,y:at.feetY ?? 0,z:at.z},'outside',1);
+            await expect(rescuer.locator('#action')).toContainText('Revive partner');
+            if (rescuer === guest) await guest.locator('#operate').tap();
+            else await host.keyboard.press('q');
+            await expect.poll(() => states.get(host).mission.down.length).toBe(0);
+          } catch (error) { if (!over() && !states.get(host).mission.dead?.length) throw error; }
+          continue;
+        }
+        if (!down.length && !m.dead?.length) throw trips.find(t => t.status === 'rejected').reason;
+        // The rift stays open three minutes, a rescue 75 s.
+        await expect.poll(over,{timeout:200000}).toBe(true);
+        return;
       }
     }
     async function riftTogether(facility) {
@@ -374,17 +387,26 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await ringBell(host,plan);
     await expect.poll(() => states.get(guest).mission.enraged).toBe(true);
     await riftTogether(plan);
+    // The sale: its items' worth, less a fifth for each operator lost. With
+    // nobody lost (always, where creatures are off) it is everything carried
+    // out; the published smoke test's walkers may lose one to a creature.
+    await expect.poll(() => states.get(host).mission.contract.receipts.length).toBe(1);
+    const receipt = states.get(host).mission.contract.receipts[0], credited = receipt.credited;
+    expect(receipt.gross).toBe(receipt.items.reduce((sum,i) => sum+i.value,0));
+    expect(credited).toBe(kept(receipt.gross,receipt.lost));
+    expect(receipt.lost).toBeLessThan(published ? 2 : 1);
+    if (!receipt.lost) expect(credited).toBe(value);
     for (const page of [host,guest]) {
-      await expect(page.locator('#result-title')).toHaveText('Credited '+value);
-      await expect(page.locator('#receipt')).toContainText('Credited'+value);
+      await expect(page.locator('#result-title')).toHaveText('Credited '+credited);
+      await expect(page.locator('#receipt')).toContainText('Credited'+credited);
       const reference = await page.locator('#report-reference').inputValue();
       expect(reference).toMatch(/^Build (?:local|[0-9a-f]{12}) · Layout v[0-9]+ · Contract [0-9]+ · Expedition [0-9]+ · Seed [0-9]+$/);
       expect(reference).toContain('Layout v'+plan.version+' · Contract '+plan.seed+' · Expedition 1 · Seed '+plan.seed);
     }
     // A host refresh during settlement shows the same sale, credited once.
     await host.reload();
-    await expect(host.locator('#result-title')).toHaveText('Credited '+value);
-    await expect.poll(() => states.get(host)?.mission?.contract.credited).toBe(value);
+    await expect(host.locator('#result-title')).toHaveText('Credited '+credited);
+    await expect.poll(() => states.get(host)?.mission?.contract.credited).toBe(credited);
     expect(states.get(host).mission.contract.receipts).toHaveLength(1);
     await contexts[0].grantPermissions(['clipboard-read','clipboard-write']);
     await host.getByRole('button',{name:'Copy reference'}).click();

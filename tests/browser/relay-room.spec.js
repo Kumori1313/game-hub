@@ -47,9 +47,13 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
     await guest.reload();
     await expect(guest.locator('#hub-members li')).toHaveCount(2);
+    // The host sends snapshots whole or as patches against one the guest
+    // holds; rebuild them as the guest does (wire.ts), once for each page.
+    const {Held} = await load('wire.ts');
     const states = new Map();
     const plans = new Map([[host,[]],[guest,[]]]);
     for (const [page,received] of plans) {
+      const held = new Held();
       page.on('websocket', socket => {
         if (!new URL(socket.url()).pathname.endsWith('/realtime/v1/websocket')) return;
         function observe({payload}) {
@@ -58,7 +62,9 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
           if (!topic?.endsWith(':host') || event !== 'broadcast') return;
           const message = body.payload;
           if (message.type === 'welcome') received.push(message.layout);
-          if (message.state) states.set(page,message.state);
+          const state = message.type === 'welcome' ? held.whole(message.epoch,message.state) :
+            message.type !== 'state' ? undefined : message.state ? held.whole(message.epoch,message.state) : held.patched(message.epoch,message.base,message.patch);
+          if (state && !(states.get(page)?.round === state.round && states.get(page).update > state.update)) states.set(page,state);
         }
         socket.on('framereceived',observe);
         socket.on('framesent',observe);

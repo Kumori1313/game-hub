@@ -257,9 +257,11 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     }
     // Each operator walks to nearby salvage and collects it with their own controls.
     const pathLength = legs => legs.slice(1).reduce((sum,l,i) => sum+Math.hypot(l.x-legs[i].x,l.z-legs[i].z),0);
+    // Not in a room over a pit: the throw test below would send it down.
+    const overPit = id => ['pit','foundry'].includes(plan.rooms.find(r => r.id === id)?.template);
     function nearest(page,taken) {
       const p = self(page);
-      return spawnSalvage(plan).filter(i => !taken.includes(i.id))
+      return spawnSalvage(plan).filter(i => !taken.includes(i.id) && !overPit(i.room))
         .map(i => ({i,legs:route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},i,undefined,1)})).filter(r => r.legs)
         .sort((a,b) => pathLength(a.legs)-pathLength(b.legs))[0].i;
     }

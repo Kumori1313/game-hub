@@ -57,20 +57,21 @@ test('storage failure keeps dark fallback and a working page-local toggle', asyn
   await expect(theme(page)).toHaveAttribute('data-theme', 'dark');
 });
 
-test('side illustration changes with scroll and is static with reduced motion', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 600 });
+test('games appear as a grid of cards showing only player range or provider', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/game-hub/');
-  await expect(page.locator('#side-visual')).toBeVisible();
-  const before = await page.locator('#side-visual').getAttribute('data-step');
-  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
-  await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');
-  expect(before).not.toBe('5');
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');
-  await page.evaluate(() => scrollTo(0, 200));
-  await page.locator('#side-visual').scrollIntoViewIfNeeded();
-  await expect(page.locator('#side-visual')).toHaveAttribute('data-step', '5');
-  expect(await page.locator('.move').first().evaluate(el => getComputedStyle(el).transitionDuration)).toBe('0s');
+  await page.getByLabel('Display name', { exact: true }).fill('Grid guest');
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  const cards = page.locator('#selection .game-card');
+  await expect(cards.first()).toBeVisible();
+  await expect(page.locator('#side-visual')).toHaveCount(0);
+  await expect(page.locator('#game-link')).toHaveAttribute('aria-describedby', 'game-title');
+  await expect(cards.filter({ hasText: 'Tic-Tac-Toe' }).locator('.game-meta')).toHaveText('2 players');
+  await expect(cards.filter({ hasText: 'Poker' }).locator('.game-meta')).toHaveText('2–6 players');
+  const boxes = await cards.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
+  if (boxes.length > 1) expect(boxes[1]).toBe(boxes[0]);
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('both themes have readable tokens, correct art paths, and responsive entry/error layouts', async ({ page }) => {

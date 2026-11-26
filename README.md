@@ -64,9 +64,9 @@ To verify deployed sites, use `E2E_BASE_URL=https://kumori1313.github.io npm run
 
 ## Visual design and themes
 
-The shared visual language uses original SVG artwork (`public/art/playfield.svg`), a plum mission banner, editorial typography, and a desktop side illustration. Semantic color tokens in `src/style.css` support both themes. Dark is the first-visit default, even when the operating system prefers light. The navigation toggle saves `dark` or `light` under the origin-wide `game-hub-theme` key, which is independent of guest identity.
+The shared visual language uses original SVG artwork (`public/art/playfield.svg`), a plum mission banner, editorial typography, and a grid of game cards. Semantic color tokens in `src/style.css` support both themes. Dark is the first-visit default, even when the operating system prefers light. The navigation toggle saves `dark` or `light` under the origin-wide `game-hub-theme` key, which is independent of guest identity.
 
-A small inline head script selects the saved theme before paint. If storage is unavailable, dark remains the default and the toggle still works for the current page. `src/theme.js` also synchronizes other tabs. `src/illustration.js` updates the preview only in response to scroll or guest progress and while visible; reduced-motion mode displays a static final board. There is no autonomous animation loop. The playable board lives in the game repository; its decorative preview is hidden during matches.
+A small inline head script selects the saved theme before paint. If storage is unavailable, dark remains the default and the toggle still works for the current page. `src/theme.js` also synchronizes other tabs. The hub has no game preview. Each game's own lobby screen shows its decorative preview (tic-tac-toe's scroll-driven board, poker's static table) and hides it once a match starts.
 
 The hub’s [component guide](https://github.com/Kumori1313/game-hub/blob/main/docs/ui-components.md) documents matching styles, future screen sketches, and verification. For the existing matching sites, keep copied presentation files aligned until they are extracted into a package. New games may use their own UI; follow the [game development guide](docs/game-development-guide.md) for platform compatibility.
 

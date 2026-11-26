@@ -259,9 +259,20 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const pathLength = legs => legs.slice(1).reduce((sum,l,i) => sum+Math.hypot(l.x-legs[i].x,l.z-legs[i].z),0);
     // Not in a room over a pit: the throw test below would send it down.
     const overPit = id => ['pit','foundry'].includes(plan.rooms.find(r => r.id === id)?.template);
+    // Salvage where it lies now: Gnawers carry things off, so an item that
+    // moved is where the host has it, and one in a Gnawer's jaws or a hand is out.
+    function lying() {
+      const haul = new Map(states.get(host).mission.haul.map(h => [h.id,h]));
+      return spawnSalvage(plan).flatMap(i => {
+        const h = haul.get(i.id);
+        if (!h) return [i];
+        if (h.owner !== null || h.gnawer !== undefined || h.used || h.banked || (h.place ?? 'inside') !== 'inside') return [];
+        return [{...i,x:h.x,y:h.y,z:h.z}];
+      });
+    }
     function nearest(page,taken) {
       const p = self(page);
-      return spawnSalvage(plan).filter(i => !taken.includes(i.id) && !overPit(i.room))
+      return lying().filter(i => !taken.includes(i.id) && !overPit(i.room))
         .map(i => ({i,legs:route(plan,{x:p.x,y:p.feetY ?? 0,z:p.z},i,undefined,1)})).filter(r => r.legs)
         .sort((a,b) => pathLength(a.legs)-pathLength(b.legs))[0].i;
     }
@@ -286,6 +297,15 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     expect(states.get(host).mission.arrival).toBe('closed');
     const hostItem = nearest(host,[]), guestItem = nearest(guest,[hostItem.id]);
     await together(hostItem,guestItem);
+    // A Gnawer may have carried an item off before its operator got there:
+    // choose again from where salvage lies now.
+    for (let attempt=0; attempt<3; attempt++) {
+      await host.waitForTimeout(500);
+      const hostReady = /Pick up/.test(await host.locator('#action').textContent() ?? ''), guestReady = await guest.locator('#take').isVisible();
+      if (hostReady && guestReady) break;
+      const again = hostReady ? undefined : nearest(host,[]), guestAgain = guestReady ? undefined : nearest(guest,again ? [again.id] : []);
+      await Promise.all([again && travel(host,again,1),guestAgain && travel(guest,guestAgain,1)]);
+    }
     // The hotbar: the host already carries the flashlight, so salvage takes a second slot.
     const carried = (page,id) => states.get(page).players.find(p => p.id === id).slots.filter(Boolean);
     // E takes the nearest item, which may be a neighbour of the one walked to.

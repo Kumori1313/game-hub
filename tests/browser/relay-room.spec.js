@@ -173,11 +173,12 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
       }
       throw Error('Could not turn to face north or south');
     }
-    // Walk a route in the home dimension or outdoors, on that place's own geometry.
-    async function stroll(page,geometry,to,where) {
+    // Walk a route in the home dimension or outdoors, on that place's own
+    // geometry; with `near`, stopping within that distance will do.
+    async function stroll(page,geometry,to,where,near = 0) {
       if (where === 'outside') await square(page);
       const p = self(page);
-      const legs = route(geometry,{x:p.x,y:p.feetY ?? 0,z:p.z},to);
+      const legs = route(geometry,{x:p.x,y:p.feetY ?? 0,z:p.z},to,undefined,near);
       if (!legs) throw Error('No walking route '+where+' to '+JSON.stringify(to));
       for (const leg of legs) {
         if (placeNow(page) !== where) return;
@@ -244,6 +245,34 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
       const rift = states.get(page).mission.rift;
       await stroll(page,outdoors(facility.seed).geometry,{x:rift.x,y:rift.y ?? 0,z:rift.z},'outside');
       await expect.poll(() => placeNow(page)).toBe('home');
+    }
+    // Both into the rift. The bell sends a stalker at once, and one may knock
+    // an operator down on the way: the one still standing walks back, revives
+    // them, and both go on, as with a strike inside. So that nobody escapes
+    // with a partner still down, both stop just short of the rift first.
+    async function rescuing(facility,run) {
+      for (let attempt=0; ; attempt++) {
+        const trips = await Promise.allSettled([host,guest].map(page => placeNow(page) === 'home' ? Promise.resolve() : run(page)));
+        if (trips.every(t => t.status === 'fulfilled')) return;
+        const down = states.get(host).mission.down.map(d => d.id);
+        const [rescuer,fallen] = down[0] === 1 ? [guest,host] : [host,guest];
+        if (attempt >= 3 || down.length !== 1 || placeNow(rescuer) !== 'outside') throw trips.find(t => t.status === 'rejected').reason;
+        const at = self(fallen);
+        await stroll(rescuer,outdoors(facility.seed).geometry,{x:at.x,y:at.feetY ?? 0,z:at.z},'outside',1);
+        await expect(rescuer.locator('#action')).toContainText('Revive partner');
+        if (rescuer === guest) await guest.locator('#operate').tap();
+        else await host.keyboard.press('q');
+        await expect.poll(() => states.get(host).mission.down.length).toBe(0);
+      }
+    }
+    async function riftTogether(facility) {
+      const map = outdoors(facility.seed);
+      await rescuing(facility,async page => {
+        await expect.poll(() => states.get(page).mission.rift).toBeTruthy();
+        const rift = states.get(page).mission.rift;
+        await stroll(page,map.geometry,{x:rift.x,y:rift.y ?? 0,z:rift.z},'outside',3);
+      });
+      await rescuing(facility,page => intoRift(page,facility));
     }
     // Reviving only needs to be within 1.7 m, so a rescuer may stop short.
     async function travel(page,to,near = 0) {
@@ -338,7 +367,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     const value = [...carried(host,1),...carried(guest,2)].reduce((sum,id) => sum+worth(id),0);
     await ringBell(host,plan);
     await expect.poll(() => states.get(guest).mission.enraged).toBe(true);
-    await Promise.all([intoRift(host,plan),intoRift(guest,plan)]);
+    await riftTogether(plan);
     for (const page of [host,guest]) {
       await expect(page.locator('#result-title')).toHaveText('Credited '+value);
       await expect(page.locator('#receipt')).toContainText('Credited'+value);
@@ -372,7 +401,7 @@ test('two hub guests play Relay Room, leave, and start a new room', async ({brow
     await guest.locator('canvas').tap();
     await Promise.all([goOutdoors(host),goOutdoors(guest)]);
     await ringBell(host,next);
-    await Promise.all([intoRift(host,next),intoRift(guest,next)]);
+    await riftTogether(next);
     await expect(host.locator('#result-eyebrow')).toHaveText('Expedition 2 of 3 sold');
     await host.locator('#replay').click();
     await expect(host.locator('#hub-select')).toBeVisible();
